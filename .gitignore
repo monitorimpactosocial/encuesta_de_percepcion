@@ -1,0 +1,9 @@
+# Ignorar todos los archivos Excel para evitar subir datos sensibles o pesados
+*.xlsx
+*.xls
+*.csv
+
+# Ignorar archivos generados por Python
+__pycache__/
+*.py[cod]
+*$py.class
