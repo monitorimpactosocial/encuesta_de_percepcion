@@ -163,105 +163,160 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ----------------------------------------------------
-    // HELPERS DE GRAFICACIÓN CHART.JS
+    // HELPERS DE GRAFICACIÓN CHART.JS POR AÑO (SERIES)
     // ----------------------------------------------------
 
-    // Para contar presencias ("Sí") cruzando múltiples columnas booleanas encubiertas
+    const yearColors = {
+        '2022': { bg: 'rgba(54, 162, 235, 0.7)', border: 'rgba(54, 162, 235, 1)' },
+        '2023': { bg: 'rgba(255, 159, 64, 0.7)', border: 'rgba(255, 159, 64, 1)' },
+        '2024': { bg: 'rgba(75, 192, 192, 0.7)', border: 'rgba(75, 192, 192, 1)' }
+    };
+    const defaultColor = { bg: 'rgba(88, 166, 255, 0.7)', border: 'rgba(88, 166, 255, 1)' };
+
+    // Para contar presencias ("Sí") cruzando múltiples columnas
     function renderMultiColumnChart(canvasId, type, label, keysToCount) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         if (charts[canvasId]) charts[canvasId].destroy();
 
-        let labels = [];
-        let dataPoints = [];
-        const total = currentData.length;
+        let years = Array.from(activeFilters['año']);
+        if (years.length === 0) {
+            years = [...new Set(currentData.map(d => String(d['año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
+        }
 
-        keysToCount.forEach(key => {
-            let count = currentData.filter(d => {
-                let v = d[key];
-                if (v === null || v === undefined) return false;
-                if (typeof v === 'number' && isNaN(v)) return false;
-                let strV = String(v).trim().toLowerCase();
-                if (strV === "" || strV === "-" || strV === "nan" || strV === "ninguno" || strV === "ninguna") return false;
-                return true;
-            }).length;
+        let labels = keysToCount.map(k => truncate(k));
+        let datasets = [];
 
-            let pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-            labels.push(truncate(key));
-            dataPoints.push(pct);
+        years.forEach(year => {
+            let yearData = currentData.filter(d => String(d['año']) === year);
+            const total = yearData.length;
+            let dataPoints = [];
+
+            keysToCount.forEach(key => {
+                let count = yearData.filter(d => {
+                    let v = d[key];
+                    if (v === null || v === undefined) return false;
+                    if (typeof v === 'number' && isNaN(v)) return false;
+                    let strV = String(v).trim().toLowerCase();
+                    if (strV === "" || strV === "-" || strV === "nan" || strV === "ninguno" || strV === "ninguna") return false;
+                    return true;
+                }).length;
+
+                let pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                dataPoints.push(pct);
+            });
+
+            let colorObj = yearColors[year] || defaultColor;
+
+            datasets.push({
+                label: `${label} - ${year}`,
+                data: dataPoints,
+                backgroundColor: type === 'line' ? colorObj.bg.replace('0.7', '0.1') : colorObj.bg,
+                borderColor: colorObj.border,
+                borderWidth: 1,
+                fill: type === 'line',
+                tension: 0.3
+            });
         });
 
-        drawChart(ctx, canvasId, type, label, labels, dataPoints, true);
+        drawChart(ctx, canvasId, type, labels, datasets);
     }
 
-    // Para agrupar las respuestas de una Sola columna categórica clásica
+    // Para agrupar respuestas de 1 sola columna
     function renderSingleColumnChart(canvasId, type, colName) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         if (charts[canvasId]) charts[canvasId].destroy();
 
-        // Agrupar
-        let counts = {};
-        const total = currentData.length;
+        let years = Array.from(activeFilters['año']);
+        if (years.length === 0) {
+            years = [...new Set(currentData.map(d => String(d['año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
+        }
 
+        // Obtener respuestas válidas históricamente
+        let allValidAnswers = new Set();
+        let globalCounts = {};
         currentData.forEach(d => {
             let v = d[colName];
             if (v === null || v === undefined) return;
             if (typeof v === 'number' && isNaN(v)) return;
             let strV = String(v).trim();
             if (strV.toLowerCase() === "nan" || strV === "" || strV === "-") return;
-
-            counts[strV] = (counts[strV] || 0) + 1;
+            allValidAnswers.add(strV);
+            globalCounts[strV] = (globalCounts[strV] || 0) + 1;
         });
 
-        // Ordenar de mayor a menor y convertir a porcentajes
-        let sortedKeys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+        // Ordenar respuestas de mayor a menor general
+        let validAnswersArray = Array.from(allValidAnswers).sort((a, b) => globalCounts[b] - globalCounts[a]);
+        let labels = validAnswersArray.map(k => truncate(k));
 
-        let labels = [];
-        let dataPoints = [];
+        let datasets = [];
 
-        sortedKeys.forEach(k => {
-            labels.push(truncate(k));
-            dataPoints.push(((counts[k] / total) * 100).toFixed(1));
+        // Si es PIE interanual, lo convertimos a BARRA para que lado a lado funcione visualmente
+        if (type === 'pie' && years.length > 1) {
+            type = 'bar';
+        }
+
+        years.forEach(year => {
+            let yearData = currentData.filter(d => String(d['año']) === year);
+            const total = yearData.length;
+
+            let counts = {};
+            yearData.forEach(d => {
+                let strV = String(d[colName]).trim();
+                counts[strV] = (counts[strV] || 0) + 1;
+            });
+
+            let dataPoints = [];
+            validAnswersArray.forEach(ans => {
+                let count = counts[ans] || 0;
+                let pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                dataPoints.push(pct);
+            });
+
+            let colorObj = yearColors[year] || defaultColor;
+
+            // Paleta para pie simple
+            const pieBgColors = ['#58a6ff', '#3182ce', '#1f6feb', '#238636', '#da3633', '#8957e5', '#d29922', '#3c3e42'];
+
+            datasets.push({
+                label: `Distribución - ${year}`,
+                data: dataPoints,
+                backgroundColor: type === 'pie' ? pieBgColors : colorObj.bg,
+                borderColor: type === 'pie' ? '#0d1117' : colorObj.border,
+                borderWidth: type === 'pie' ? 2 : 1,
+                fill: false
+            });
         });
 
-        drawChart(ctx, canvasId, type, "Distribución (%)", labels, dataPoints, type !== 'pie');
+        drawChart(ctx, canvasId, type, labels, datasets);
     }
 
     // Motor de pintado genérico
-    function drawChart(ctx, canvasId, type, defaultLabel, labels, dataPoints, isPercentage) {
-
-        // Paleta de colores para Pie charts
-        const bgColors = type === 'pie' ?
-            ['#58a6ff', '#3182ce', '#1f6feb', '#238636', '#da3633', '#8957e5', '#d29922', '#3c3e42'] :
-            (type === 'line' ? 'rgba(88, 166, 255, 0.1)' : 'rgba(88, 166, 255, 0.7)');
-
-        const borderColors = type === 'pie' ? '#0d1117' : '#58a6ff';
-
+    function drawChart(ctx, canvasId, type, labels, datasets) {
         charts[canvasId] = new Chart(ctx, {
             type: type,
             data: {
                 labels: labels,
-                datasets: [{
-                    label: defaultLabel,
-                    data: dataPoints,
-                    backgroundColor: bgColors,
-                    borderColor: borderColors,
-                    borderWidth: type === 'pie' ? 2 : 1,
-                    fill: type === 'line',
-                    tension: 0.3
-                }]
+                datasets: datasets
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                indexAxis: (canvasId === 'chartEstudios' || canvasId === 'chartIngresos' || canvasId === 'chartTrabajo') ? 'y' : 'x', // Barras horizontales para perfiles largos
+                indexAxis: (canvasId === 'chartEstudios' || canvasId === 'chartIngresos' || canvasId === 'chartTrabajo') ? 'y' : 'x',
                 plugins: {
-                    legend: { display: type === 'pie', position: 'right', labels: { color: '#f0f6fc', font: { size: 11 } } },
+                    legend: {
+                        display: true, // Mostrar leyenda siempre para identificar los años
+                        position: 'top',
+                        labels: { color: '#f0f6fc', font: { size: 11 } }
+                    },
                     datalabels: {
                         color: type === 'pie' ? '#fff' : '#f0f6fc',
                         anchor: type === 'pie' ? 'center' : 'end',
                         align: type === 'pie' ? 'center' : (type === 'line' ? 'top' : 'end'),
                         formatter: function (value) { return value > 0 ? value + '%' : ''; },
-                        font: { weight: 'bold', size: 10 }
+                        font: { weight: 'bold', size: 9 },
+                        display: function (context) {
+                            return context.dataset.data[context.dataIndex] > 0; // Ocultar labels de 0%
+                        }
                     }
                 },
                 scales: (type === 'bar' || type === 'line') ? {
