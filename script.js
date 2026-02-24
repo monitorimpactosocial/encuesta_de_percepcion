@@ -167,11 +167,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // ----------------------------------------------------
 
     const yearColors = {
-        '2022': { bg: 'rgba(54, 162, 235, 0.7)', border: 'rgba(54, 162, 235, 1)' },
-        '2023': { bg: 'rgba(255, 159, 64, 0.7)', border: 'rgba(255, 159, 64, 1)' },
-        '2024': { bg: 'rgba(75, 192, 192, 0.7)', border: 'rgba(75, 192, 192, 1)' }
+        '2022': { bg: 'rgba(0, 240, 255, 0.75)', border: 'rgba(0, 240, 255, 1)' }, // Cyan Neon
+        '2023': { bg: 'rgba(255, 0, 128, 0.75)', border: 'rgba(255, 0, 128, 1)' }, // Magenta Neon
+        '2024': { bg: 'rgba(144, 255, 0, 0.75)', border: 'rgba(144, 255, 0, 1)' }  // Lime Neon
     };
-    const defaultColor = { bg: 'rgba(88, 166, 255, 0.7)', border: 'rgba(88, 166, 255, 1)' };
+    const defaultColor = { bg: 'rgba(0, 240, 255, 0.75)', border: 'rgba(0, 240, 255, 1)' };
 
     // Para contar presencias ("Sí") cruzando múltiples columnas
     function renderMultiColumnChart(canvasId, type, label, keysToCount) {
@@ -274,8 +274,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let colorObj = yearColors[year] || defaultColor;
 
-            // Paleta para pie simple
-            const pieBgColors = ['#58a6ff', '#3182ce', '#1f6feb', '#238636', '#da3633', '#8957e5', '#d29922', '#3c3e42'];
+            // Paleta para pie simple y vibrante
+            const pieBgColors = ['#00f0ff', '#ff007f', '#90ff00', '#ffea00', '#9d00ff', '#ff5e00', '#00ff73', '#00b8ff'];
 
             datasets.push({
                 label: `Distribución - ${year}`,
