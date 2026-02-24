@@ -172,6 +172,23 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // Boton Theme Toggle
+    const themeBtn = document.getElementById('btn-theme');
+    document.documentElement.setAttribute('data-theme', 'dark'); // Fondo oscuro por default
+    themeBtn.innerText = '☀️ Light';
+
+    themeBtn.addEventListener('click', () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (isDark) {
+            document.documentElement.removeAttribute('data-theme');
+            themeBtn.innerText = '🌙 Dark';
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeBtn.innerText = '☀️ Light';
+        }
+        updateDashboard(); // Redibujar todos los graficos con colores correctos
+    });
+
     // APLICAR FILTROS Y RECOMPUTAR GRAFICOS
     function updateDashboard() {
         let filtered = encuestasData;
@@ -226,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // 2. Percepcion Positiva
         let countPos = data.filter(d => {
             let negResp = String(d['no vio algun aspecto positivo aun'] || '').trim().toLowerCase();
-            return !(negResp === 'no vio algun aspecto positivo aun' || negResp === 'no vi algún aspecto positivo aún' || negResp === 'true');
+            return !(negResp === 'no vio algun aspecto positivo aun' || negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true');
         }).length;
         document.getElementById('kpi-positiva').innerText = ((countPos / data.length) * 100).toFixed(1) + '%';
 
@@ -405,7 +422,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Calculamos gente que reporto algun aspecto positivo (no marco "No vio algun aspecto positivo aun")
             let countPositive = yearData.filter(d => {
                 let negResp = String(d['no vio algun aspecto positivo aun']).trim().toLowerCase();
-                return !(negResp === 'no vio algun aspecto positivo aun' || negResp === 'no vi algún aspecto positivo aún' || negResp === 'true');
+                return !(negResp === 'no vio algun aspecto positivo aun' || negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true');
             }).length;
 
             let pct = total > 0 ? ((countPositive / total) * 100).toFixed(1) : 0;
@@ -470,6 +487,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Motor de pintado genérico
     function drawChart(ctx, canvasId, type, labels, datasets) {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const rawColor = isDark ? '#e2e8f0' : '#475569';
+        const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+        const labelColor = isDark ? '#8b949e' : '#64748b';
+
+        Chart.defaults.color = rawColor;
+
         charts[canvasId] = new Chart(ctx, {
             type: type,
             data: {
@@ -484,14 +508,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     legend: {
                         display: true, // Mostrar leyenda siempre para identificar los años
                         position: 'top',
-                        labels: { color: '#f0f6fc', font: { size: 11 } }
+                        labels: { color: rawColor, font: { size: 11, family: "'Inter', sans-serif" } }
                     },
                     datalabels: {
-                        color: type === 'pie' ? '#fff' : '#f0f6fc',
+                        color: type === 'pie' ? '#fff' : rawColor,
                         anchor: type === 'pie' ? 'center' : 'end',
                         align: type === 'pie' ? 'center' : (type === 'line' ? 'top' : 'end'),
                         formatter: function (value) { return value > 0 ? value + '%' : ''; },
-                        font: { weight: 'bold', size: 9 },
+                        font: { weight: 'bold', size: 10, family: "'Inter', sans-serif" },
                         display: function (context) {
                             return context.dataset.data[context.dataIndex] > 0; // Ocultar labels de 0%
                         }
@@ -500,12 +524,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 scales: (type === 'bar' || type === 'line') ? {
                     y: {
                         beginAtZero: true,
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#8b949e', font: { size: 11 } }
+                        grid: { color: gridColor },
+                        ticks: { color: labelColor, font: { size: 11 } }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { color: '#8b949e', font: { size: 11 } }
+                        ticks: { color: labelColor, font: { size: 11 } }
                     }
                 } : {}
             }
