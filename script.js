@@ -4,11 +4,11 @@ let charts = {};
 
 // ESTADOS DE FILTROS (Múltiples selecciones permitidas por categoría)
 let activeFilters = {
-    'Año': new Set(),
-    'Género': new Set(),
-    'Edad (Rango)': new Set(),
-    'NSE_FINAL': new Set(),
-    'Comunidad ': new Set()
+    'año': new Set(),
+    'género': new Set(),
+    'edad': new Set(),
+    'nse': new Set(),
+    'comunidad': new Set()
 };
 
 // CONFIGURACIÓN CHART.JS GLOBALES
@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById('btn-reset').addEventListener('click', () => {
-        activeFilters = { 'Año': new Set(), 'Género': new Set(), 'Edad (Rango)': new Set(), 'NSE_FINAL': new Set(), 'Comunidad ': new Set() };
+        activeFilters = { 'año': new Set(), 'género': new Set(), 'edad': new Set(), 'nse': new Set(), 'comunidad': new Set() };
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
         updateDashboard();
     });
@@ -91,11 +91,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('dashboard-screen').style.display = "flex";
 
         // Crear botones de filtros
-        createFilterButtons('filter-anio', 'Año');
-        createFilterButtons('filter-genero', 'Género');
-        createFilterButtons('filter-edad', 'Edad (Rango)');
-        createFilterButtons('filter-nse', 'NSE_FINAL');
-        createFilterButtons('filter-comunidad', 'Comunidad ');
+        createFilterButtons('filter-anio', 'año');
+        createFilterButtons('filter-genero', 'género');
+        createFilterButtons('filter-edad', 'edad');
+        createFilterButtons('filter-nse', 'nse');
+        createFilterButtons('filter-comunidad', 'comunidad');
 
         // Primer render general
         updateDashboard();
@@ -178,16 +178,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const ctx = document.getElementById(canvasId).getContext('2d');
         if (charts[canvasId]) charts[canvasId].destroy();
 
-        let years = Array.from(activeFilters['Año']);
+        let years = Array.from(activeFilters['año']);
         if (years.length === 0) {
-            years = [...new Set(currentData.map(d => String(d['Año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
+            years = [...new Set(currentData.map(d => String(d['año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
         }
 
         let labels = keysToCount.map(k => truncate(k));
         let datasets = [];
 
         years.forEach(year => {
-            let yearData = currentData.filter(d => String(d['Año']) === year);
+            let yearData = currentData.filter(d => String(d['año']) === year);
             const total = yearData.length;
             let dataPoints = [];
 
@@ -226,9 +226,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const ctx = document.getElementById(canvasId).getContext('2d');
         if (charts[canvasId]) charts[canvasId].destroy();
 
-        let years = Array.from(activeFilters['Año']);
+        let years = Array.from(activeFilters['año']);
         if (years.length === 0) {
-            years = [...new Set(currentData.map(d => String(d['Año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
+            years = [...new Set(currentData.map(d => String(d['año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
         }
 
         // Obtener respuestas válidas históricamente
@@ -256,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         years.forEach(year => {
-            let yearData = currentData.filter(d => String(d['Año']) === year);
+            let yearData = currentData.filter(d => String(d['año']) === year);
             const total = yearData.length;
 
             let counts = {};
