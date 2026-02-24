@@ -622,6 +622,10 @@ aside h3 {
   padding: var(--s-20);
   box-shadow: var(--shadow-xs);
   transition: box-shadow 0.15s ease, transform 0.15s ease;
+  overflow: hidden;
+  /* <--- CLAVE PARA EVITAR SOLAPE HTML */
+  contain: content;
+  /* <--- AISLANTE DE RENDERIZADO BROWSER */
 }
 
 .chart-container:hover {
@@ -631,19 +635,27 @@ aside h3 {
 
 .chart-container h3 {
   margin: 0 0 var(--s-12);
-  font-size: var(--fs-15);
-  font-weight: 900;
+  font-size: var(--fs-14);
+  font-weight: 800;
   color: var(--text);
   padding-bottom: var(--s-10);
   border-bottom: 1px solid rgba(241, 245, 249, 1);
 }
 
 .canvas-wrapper {
-  flex: 1;
   position: relative;
   height: 300px;
-  /* Forzamos altura en vez de min-height para evitar overflow en Flexbox de Chartjs */
-  width: 100%;
+  /* Explicit height is required for Chart.js to constrain itself vertically */
+  width: 99%;
+  /* 99% prevents horizontal infinity loop resizing in Flex childs */
+  margin: 0 auto;
+  /* Center it */
+}
+
+/* El canvas interno respeta el relative parent */
+.canvas-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .chart-note {

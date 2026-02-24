@@ -339,7 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let colorObj = yearColors[year] || defaultColor;
 
             datasets.push({
-                label: `${label} - ${year}`,
+                label: `${year}`, // Optimización UX: Solo exponer el año, el título de la figura ya dice de qué trata
                 data: dataPoints,
                 backgroundColor: type === 'line' ? colorObj.bg.replace('0.7', '0.1') : colorObj.bg,
                 borderColor: colorObj.border,
@@ -536,7 +536,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         formatter: function (value) { return value > 0 ? value + '%' : ''; },
                         font: { weight: 'bold', size: 10, family: "'Inter', sans-serif" },
                         display: function (context) {
-                            return context.dataset.data[context.dataIndex] > 0; // Ocultar labels de 0%
+                            let val = context.dataset.data[context.dataIndex];
+                            return val >= 3.0; // Ocultar labels < 3% para evitar solapamientos en barras minúsculas
                         }
                     }
                 },
