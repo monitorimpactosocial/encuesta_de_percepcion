@@ -13,7 +13,8 @@ let activeFilters = {
 };
 
 // CONFIGURACIÓN CHART.JS GLOBALES
-Chart.defaults.color = '#8b949e';
+Chart.defaults.color = '#e2e8f0'; // Color de fuente más visible
+Chart.defaults.font.size = 13;    // Aumento del tamaño para legibilidad de ejes
 Chart.defaults.font.family = "'Inter', sans-serif";
 Chart.register(ChartDataLabels);
 
@@ -130,14 +131,26 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.dataset.val = String(val);
             btn.innerText = String(val).charAt(0).toUpperCase() + String(val).slice(1);
 
-            // Evento click (Toggle / Multiple)
-            btn.addEventListener('click', () => {
-                if (activeFilters[colName].has(String(val))) {
-                    activeFilters[colName].delete(String(val));
-                    btn.classList.remove('active');
-                } else {
-                    activeFilters[colName].add(String(val));
+            // Evento click (Single select vs Múltiple / Toggle con CTRL)
+            btn.addEventListener('click', (e) => {
+                const isMultiSelect = e.ctrlKey || e.metaKey;
+                const vStr = String(val);
+
+                if (!isMultiSelect) {
+                    // Si NO apretó CTRL, Limpiar todos los botones de este grupo y dejar solo este
+                    activeFilters[colName].clear();
+                    container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    activeFilters[colName].add(vStr);
                     btn.classList.add('active');
+                } else {
+                    // Si SÍ apretó CTRL, comportamiento Toggle
+                    if (activeFilters[colName].has(vStr)) {
+                        activeFilters[colName].delete(vStr);
+                        btn.classList.remove('active');
+                    } else {
+                        activeFilters[colName].add(vStr);
+                        btn.classList.add('active');
+                    }
                 }
                 updateDashboard();
             });
@@ -166,8 +179,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // RENDER MODULE 2
         renderMultiColumnChart('chartExpectativas', 'bar', 'Expectativas (%)', configExpectativas);
-        renderMultiColumnChart('chartMedios', 'line', 'Medios de Info. (%)', configMedios);
-        renderSingleColumnChart('chartTemores', 'pie', colTemores);
+        renderMultiColumnChart('chartMedios', 'bar', 'Medios de Info. (%)', configMedios); // Cambiado a barras
+        renderSingleColumnChart('chartTemores', 'bar', colTemores); // Convertido a barras permanentemente
 
         // RENDER MODULE 3
         renderSingleColumnChart('chartEstudios', 'bar', colEstudios);

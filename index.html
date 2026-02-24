@@ -57,12 +57,18 @@
                 <p class="filter-instructions">Selecciona uno o más botones para filtrar los datos.</p>
 
                 <div class="filter-group">
-                    <label>Tipo de Muestra</label>
+                    <label title="Aísla personas que respondieron encuestas en múltiples años.">
+                        Tipo de Muestra <span style="cursor:help; color:var(--paracel-blue);"
+                            title="Sí = Panelistas a lo largo del tiempo. No = Encuestados únicos. Todos = Sin filtro.">(i)</span>
+                    </label>
                     <div class="filter-buttons" id="filter-muestra"></div>
                 </div>
 
                 <div class="filter-group">
-                    <label>Año de la Ola</label>
+                    <label title="Filtra los resultados por la ola de ejecución.">
+                        Año de la Ola <span style="cursor:help; color:var(--paracel-blue);"
+                            title="Selecciona uno con clic simple. Selecciona múltiples a la vez manteniendo presionada la tecla CTRL.">(i)</span>
+                    </label>
                     <div class="filter-buttons" id="filter-anio"></div>
                 </div>
 
@@ -105,14 +111,20 @@
                     <h2 class="tab-title">Percepción de la Comunidad</h2>
                     <div class="charts-row">
                         <div class="chart-container glass-panel">
-                            <h3>Aspectos Positivos de la Comunidad</h3>
+                            <h3 title="Comparación porcentual de aspectos positivos mencionados a través de los años.">
+                                Aspectos Positivos de la Comunidad <span style="cursor:help;"
+                                    title="Valores en porcentaje de menciones totales en el año">(i)</span></h3>
                             <div class="canvas-wrapper"><canvas id="chartPositivos"></canvas></div>
+                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">Nota:
+                                Iteración anual. Fuente: Encuestas Nauta (2022-2025).</p>
                         </div>
                     </div>
                     <div class="charts-row">
                         <div class="chart-container glass-panel">
                             <h3>Problemas / Aspectos Negativos</h3>
                             <div class="canvas-wrapper"><canvas id="chartNegativos"></canvas></div>
+                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">Nota:
+                                Muestra evolución de barreras. Elaboración propia.</p>
                         </div>
                     </div>
                 </div>
@@ -126,13 +138,17 @@
                             <div class="canvas-wrapper"><canvas id="chartExpectativas"></canvas></div>
                         </div>
                         <div class="chart-container glass-panel">
-                            <h3>Temores / Preocupaciones sobre la Fábrica</h3>
+                            <h3 title="Desglose general de temores en todos los años seleccionados">Temores /
+                                Preocupaciones sobre la Fábrica (General)</h3>
                             <div class="canvas-wrapper"><canvas id="chartTemores"></canvas></div>
+                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                                Interpretación: Distribución porcentual agregada de principales temores.</p>
                         </div>
                     </div>
                     <div class="charts-row">
                         <div class="chart-container glass-panel">
-                            <h3>Recepción de Información (Medios)</h3>
+                            <h3>Recepción de Información (Medios) <span style="cursor:help;"
+                                    title="Barras agrupadas por año comparando penetración mediática">(i)</span></h3>
                             <div class="canvas-wrapper"><canvas id="chartMedios"></canvas></div>
                         </div>
                     </div>
@@ -144,21 +160,34 @@
 
                     <div class="charts-row">
                         <div class="chart-container glass-panel">
-                            <h3>Nivel de Estudios</h3>
+                            <h3 title="Comparación temporal de nivel educativo alcanzado">Nivel de Estudios <span
+                                    style="cursor:help; color:var(--paracel-blue);"
+                                    title="Gráfico de series por año">(i)</span></h3>
                             <div class="canvas-wrapper" style="min-height: 350px;"><canvas id="chartEstudios"></canvas>
                             </div>
+                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                                Interpretación: Distribución educacional de encuestados iterando entre cada ola en %.
+                                Fuente: Datos Encuesta Nauta.</p>
                         </div>
                         <div class="chart-container glass-panel">
-                            <h3>Situación Laboral</h3>
+                            <h3 title="Ocupación principal actual">Situación Laboral <span
+                                    style="cursor:help; color:var(--paracel-blue);"
+                                    title="Gráfico agrupado y seriado por año">(i)</span></h3>
                             <div class="canvas-wrapper" style="min-height: 350px;"><canvas id="chartTrabajo"></canvas>
                             </div>
+                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                                Interpretación: Evolución porcentual de los distintos sectores de trabajo de la
+                                comunidad encuestada.</p>
                         </div>
                     </div>
 
                     <div class="charts-row">
                         <div class="chart-container glass-panel">
-                            <h3>Ingresos Familiares</h3>
+                            <h3 title="Ingresos familiares sumados de hogar">Ingresos Familiares (Series Interanuales)
+                            </h3>
                             <div class="canvas-wrapper"><canvas id="chartIngresos"></canvas></div>
+                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">Nota:
+                                Auto-reportado según bandas de ingreso económico.</p>
                         </div>
                     </div>
 
@@ -175,15 +204,24 @@
 
                     <div class="charts-row">
                         <div class="chart-container glass-panel">
-                            <h3>Aspectos Positivos de la Comunidad (Muestra Panel)</h3>
+                            <h3 title="Líneas de tiempo conectando participantes fijos.">Aspectos Positivos de la
+                                Comunidad (Muestra Panel)</h3>
                             <div class="canvas-wrapper"><canvas id="chartPanelPositivos"></canvas></div>
+                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                                Interpretación de Series temporales: Cada línea demuestra de izquierda a derecha la
+                                evolución analítica intra-sujeto (en los mismos encuestados) a medida que pasó el
+                                tiempo.</p>
                         </div>
                     </div>
 
                     <div class="charts-row">
                         <div class="chart-container glass-panel">
-                            <h3>Expectativas sobre la Fábrica (Muestra Panel)</h3>
+                            <h3 title="Optimismos históricos por ola sobre los panelistas idénticos">Expectativas sobre
+                                la Fábrica (Muestra Panel)</h3>
                             <div class="canvas-wrapper"><canvas id="chartPanelExpectativas"></canvas></div>
+                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">Nota:
+                                Util para correlacionar factores del "antes vs después" sin distracción de la población
+                                flotante.</p>
                         </div>
                     </div>
                 </div> <!-- Fin Tab 4 -->
