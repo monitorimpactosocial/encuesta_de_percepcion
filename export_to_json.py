@@ -24,10 +24,12 @@ df = df.where(pd.notnull(df), None)
 print("Procesando cruce de datos Panel...")
 import re
 
+df['es_panel'] = "No" # Default value
+
 # Buscar inteligentemente las columnas de nombre y celular sin importar variaciones de nombre
-name_cols = [c for c in df.columns if 'nombre del encuestado' in c.lower()]
-phone_cols = [c for c in df.columns if 'telfono' in c.lower() or 'teléfono' in c.lower()]
-year_col = [c for c in df.columns if 'año' in c.lower()]
+name_cols = [c for c in df.columns if 'nombre' in c.lower() and 'encuestado' in c.lower()]
+phone_cols = [c for c in df.columns if 'telfono' in c.lower() or 'teléfono' in c.lower() or 'telefono' in c.lower()]
+year_col = [c for c in df.columns if 'año' in c.lower() or 'ano' in c.lower()]
 
 if name_cols and phone_cols and year_col:
     name_col = name_cols[0]
@@ -47,7 +49,7 @@ if name_cols and phone_cols and year_col:
     df['_clean_name'] = df[name_col].apply(clean_name)
 
     # El ID único es: PrimerNombre_Ultimos6Telefono. Requerimos al menos 5 digitos de celular
-    df['id_panel'] = df.apply(lambda row: row['_clean_name'].split()[0] + "_" + row['_clean_phone'] if len(row['_clean_phone'])>4 else np.nan, axis=1)
+    df['id_panel'] = df.apply(lambda row: str(row['_clean_name']).split()[0] + "_" + row['_clean_phone'] if len(row['_clean_phone'])>4 else np.nan, axis=1)
 
     # Agrupar y contar cuantas veces encuestamos al id_panel en diferentes años
     counts = df.dropna(subset=['id_panel']).groupby('id_panel')[y_col].nunique()
@@ -56,7 +58,7 @@ if name_cols and phone_cols and year_col:
     df['es_panel'] = df['id_panel'].apply(lambda x: "Sí" if x in panel_ids else "No")
 
     # Columnas demográficas a imputar longitudinalmente si están vacías (bfill / ffill)
-    demog_cols = [c for c in df.columns if any(k in c.lower() for k in ['género', 'edad', 'nse', 'comunidad', 'nivel de estudios'])]
+    demog_cols = [c for c in df.columns if any(k in c.lower() for k in ['género', 'genero', 'edad', 'nse', 'comunidad', 'nivel de estudios'])]
 
     if demog_cols:
         # Reemplazar None temporales por np.nan para el backfill/forwardfill
@@ -72,7 +74,7 @@ if name_cols and phone_cols and year_col:
     # Limpiar columnas auxiliares de calculo
     df.drop(columns=['_clean_phone', '_clean_name', 'id_panel'], inplace=True)
 
-print(f"Total encuestados Panel identificados: {len(df[df.get('es_panel') == 'Sí'])}")
+print(f"Total encuestados Panel identificados: {len(df[df['es_panel'] == 'Sí'])}")
 # --- FIN LÓGICA DE DATOS PANEL ---
 
 # Eliminar columnas con info personal o innecesaria para proteger datos privadamente antes de exportar
