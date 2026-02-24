@@ -100,10 +100,11 @@
 
                 <!-- TABS NAV -->
                 <div class="tabs-nav">
-                    <button class="tab-btn active" data-tab="tab-comunidad">Módulo 1: Comunidad</button>
-                    <button class="tab-btn" data-tab="tab-paracel">Módulo 2: Fábrica y Comunicación</button>
-                    <button class="tab-btn" data-tab="tab-perfil">Módulo 3: Perfil Demográfico</button>
-                    <button class="tab-btn" data-tab="tab-panel">Módulo 4: Análisis Panel</button>
+                    <button class="tab-btn active" data-tab="tab-comunidad">1. Comunidad</button>
+                    <button class="tab-btn" data-tab="tab-paracel">2. Fábrica y Comunicación</button>
+                    <button class="tab-btn" data-tab="tab-perfil">3. Perfil Demográfico</button>
+                    <button class="tab-btn" data-tab="tab-evolucion"
+                        style="color:var(--orange-accent); font-weight:800;">4. Evolución Clave (2022-2025)</button>
                 </div>
 
                 <!-- TAB 1: COMUNIDAD -->
@@ -193,35 +194,63 @@
 
                 </div> <!-- Fin Tab 3 -->
 
-                <!-- TAB 4: PANEL LONGITUDINAL -->
-                <div class="tab-content" id="tab-panel" style="display: none;">
-                    <h2 class="tab-title">Evolución Longitudinal (Muestra Panel)</h2>
+                <!-- TAB 4: EVOLUCION -->
+                <div class="tab-content" id="tab-evolucion" style="display: none;">
+                    <h2 class="tab-title" style="color:var(--accent); border-bottom-color:var(--orange-accent);">
+                        Indicadores Evolutivos Clave (2022-2025)</h2>
                     <p style="color:var(--text-sec); font-size:14px; margin-bottom:15px;">
-                        Estos gráficos aíslan exclusivamente a las mismas personas encuestadas en múltiples años,
-                        revelando cambios puramente de su percepción a través del tiempo. Asegúrate de encender el
-                        filtro "Tipo de Muestra: Sí" a la izquierda.
+                        Estos gráficos muestran los cambios más significativos en la percepción y situación de las
+                        comunidades a través del tiempo. Se recomienda visualizar con todos los años seleccionados
+                        (marcando con la tecla CTRL).
                     </p>
 
                     <div class="charts-row">
-                        <div class="chart-container glass-panel">
-                            <h3 title="Líneas de tiempo conectando participantes fijos.">Aspectos Positivos de la
-                                Comunidad (Muestra Panel)</h3>
-                            <div class="canvas-wrapper"><canvas id="chartPanelPositivos"></canvas></div>
-                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
-                                Interpretación de Series temporales: Cada línea demuestra de izquierda a derecha la
-                                evolución analítica intra-sujeto (en los mismos encuestados) a medida que pasó el
-                                tiempo.</p>
+                        <div class="chart-container">
+                            <h3 title="Tendencia de favorabilidad a lo largo de los años">1. Percepción Positiva de
+                                Paracel (%)</h3>
+                            <div class="canvas-wrapper"><canvas id="chartEvolPositiva"></canvas></div>
+                            <p class="chart-note">Interpretación: Curva histórica que visualiza el pico de aceptación y
+                                desgaste de expectativas (línea).</p>
+                        </div>
+                        <div class="chart-container">
+                            <h3 title="El problema crítico en constante crecimiento">2. Falta de Oferta Laboral como
+                                Problema (%)</h3>
+                            <div class="canvas-wrapper"><canvas id="chartEvolFaltaLaboral"></canvas></div>
+                            <p class="chart-note">Interpretación: Preocupación comunitaria constante por el empleo local
+                                vs avances del proyecto (barras).</p>
                         </div>
                     </div>
 
                     <div class="charts-row">
-                        <div class="chart-container glass-panel">
-                            <h3 title="Optimismos históricos por ola sobre los panelistas idénticos">Expectativas sobre
-                                la Fábrica (Muestra Panel)</h3>
-                            <div class="canvas-wrapper"><canvas id="chartPanelExpectativas"></canvas></div>
-                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">Nota:
-                                Util para correlacionar factores del "antes vs después" sin distracción de la población
-                                flotante.</p>
+                        <div class="chart-container">
+                            <h3 title="Cambio en atributos líderes de las comunidades">3. Atributos: Tranquilidad vs La
+                                Gente</h3>
+                            <div class="canvas-wrapper"><canvas id="chartEvolAtributos"></canvas></div>
+                            <p class="chart-note">Interpretación: Desplazamiento de "La tranquilidad" por "La gente"
+                                como aspecto más valorado (barras agrupadas).</p>
+                        </div>
+                        <div class="chart-container">
+                            <h3 title="Reducción del desconocimiento 'No sabe' vs 'Celulosa/Eucalipto'">4.
+                                Desconocimiento vs Comprensión</h3>
+                            <div class="canvas-wrapper"><canvas id="chartEvolProduccion"></canvas></div>
+                            <p class="chart-note">Interpretación: Reducción del "NS/NR" sobre la producción a favor del
+                                "Eucalipto/Celulosa" (áreas/barras).</p>
+                        </div>
+                    </div>
+
+                    <div class="charts-row">
+                        <div class="chart-container">
+                            <h3 title="Creación de puestos vs Mejoras en caminos">5. Beneficios vs Expectativas Reales
+                            </h3>
+                            <div class="canvas-wrapper"><canvas id="chartEvolBeneficios"></canvas></div>
+                            <p class="chart-note">Interpretación: Caída en percepción de nuevos empleos contra un
+                                aparente aumento en valoración infraestructural (línea).</p>
+                        </div>
+                        <div class="chart-container">
+                            <h3 title="Fuentes de información dominantes">6. Canales de Comunicación Relevantes</h3>
+                            <div class="canvas-wrapper"><canvas id="chartEvolCanales"></canvas></div>
+                            <p class="chart-note">Interpretación: Crecimiento de canales directos y digitales frente a
+                                rumores (barras apiladas o sectores).</p>
                         </div>
                     </div>
                 </div> <!-- Fin Tab 4 -->

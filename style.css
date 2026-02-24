@@ -1,15 +1,15 @@
-/* Variables y Tema Premium Vibrante */
+/* Variables y Tema Premium Vibrante Infografia (Light Mode) */
 :root {
-    --bg-overlay: rgba(10, 25, 47, 0.75);
-    /* Overlay azul oscuro para legibilidad */
-    --panel-bg: rgba(255, 255, 255, 0.1);
-    --panel-border: rgba(255, 255, 255, 0.18);
-    --text-primary: #ffffff;
-    --text-sec: #d1d5db;
-    --accent: #00f0ff;
-    /* Cyan neon vibrante */
-    --accent-hover: #00c3ff;
-    --accent-glow: rgba(0, 240, 255, 0.4);
+    --bg-overlay: rgba(248, 250, 252, 0.95);
+    --panel-bg: rgba(255, 255, 255, 0.95);
+    --panel-border: rgba(226, 232, 240, 0.8);
+    --text-primary: #0f172a;
+    --text-sec: #475569;
+    --accent: #0284c7;
+    /* Paracel blue/teal */
+    --accent-hover: #0369a1;
+    --accent-glow: rgba(2, 132, 199, 0.2);
+    --orange-accent: #f97316;
 }
 
 * {
@@ -41,8 +41,8 @@ body::before {
     right: 0;
     bottom: 0;
     background: var(--bg-overlay);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: -1;
 }
 
@@ -57,48 +57,45 @@ body::before {
 .glass-panel,
 .glass-navbar {
     background: var(--panel-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--panel-border);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    /* Sombra suave */
 }
 
 .glass-panel {
-    border-radius: 16px;
+    border-radius: 12px;
     padding: 20px;
 }
 
 /* LOGIN SCREEN */
 .login-box {
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
     padding: 40px;
-    border-radius: 20px;
+    border-radius: 12px;
     width: 100%;
     max-width: 400px;
     text-align: center;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
     animation: fadeIn 0.8s ease-out;
 }
 
 .logo-login {
     width: 180px;
     margin-bottom: 25px;
-    filter: drop-shadow(0px 0px 10px rgba(255, 255, 255, 0.2));
 }
 
 .login-box h2 {
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 700;
     margin-bottom: 5px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    color: var(--text-primary);
 }
 
 .login-box p {
     color: var(--text-sec);
     margin-bottom: 30px;
-    font-size: 15px;
+    font-size: 14px;
 }
 
 .input-group {
@@ -108,10 +105,10 @@ body::before {
 input {
     width: 100%;
     padding: 14px 18px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f8fafc;
     border: 1px solid var(--panel-border);
-    border-radius: 10px;
-    color: white;
+    border-radius: 8px;
+    color: var(--text-primary);
     font-size: 15px;
     outline: none;
     transition: all 0.3s ease;
@@ -119,33 +116,34 @@ input {
 
 input:focus {
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 15px var(--accent-glow);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .btn-primary {
     width: 100%;
     padding: 14px;
-    background: linear-gradient(135deg, var(--accent), #0077ff);
+    background: var(--accent);
     color: #fff;
     border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 700;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
     margin-top: 15px;
-    box-shadow: 0 4px 15px rgba(0, 119, 255, 0.4);
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 119, 255, 0.6);
+    background: var(--accent-hover);
+    box-shadow: 0 6px 15px rgba(2, 132, 199, 0.4);
 }
 
 .error-msg {
-    color: #ff4757 !important;
-    font-weight: 600;
+    color: #ef4444 !important;
+    font-weight: 500;
     margin-bottom: 15px !important;
 }
 
@@ -163,7 +161,7 @@ input:focus {
     padding: 15px 35px;
     border-bottom: 1px solid var(--panel-border);
     z-index: 10;
-    background: rgba(10, 25, 47, 0.6);
+    background: #ffffff;
 }
 
 .nav-left {
@@ -173,15 +171,13 @@ input:focus {
 }
 
 .logo-nav {
-    height: 45px;
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));
+    height: 40px;
 }
 
 .nav-left h1 {
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
 }
 
 .nav-right {
@@ -194,28 +190,26 @@ input:focus {
     color: #fff;
     font-weight: 700;
     font-size: 14px;
-    background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(0, 119, 255, 0.3));
+    background: var(--accent);
     padding: 8px 16px;
     border-radius: 20px;
-    border: 1px solid var(--accent);
-    box-shadow: 0 0 10px var(--accent-glow);
+    box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 .btn-secondary {
     padding: 8px 18px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f1f5f9;
     border: 1px solid var(--panel-border);
     color: var(--text-primary);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     transition: all 0.2s;
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: #fff;
+    background: #e2e8f0;
 }
 
 /* LAYOUT */
@@ -226,46 +220,43 @@ input:focus {
 }
 
 aside.sidebar {
-    width: 340px;
-    min-width: 340px;
+    width: 320px;
+    min-width: 320px;
     border-right: 1px solid var(--panel-border);
-    border-radius: 0;
-    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
-    padding: 30px 25px;
+    background: #ffffff;
+    padding: 25px 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    background: rgba(15, 23, 42, 0.5);
 }
 
 aside h3 {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--text-sec);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     margin-bottom: 5px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .filter-instructions {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-sec);
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .filter-group {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 20px;
+    gap: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 15px;
 }
 
 .filter-group label {
-    font-size: 14px;
-    color: var(--text-sec);
+    font-size: 13px;
+    color: var(--text-primary);
     font-weight: 600;
 }
 
@@ -273,51 +264,50 @@ aside h3 {
 .filter-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 }
 
 .filter-btn {
-    background: rgba(255, 255, 255, 0.05);
+    background: #f8fafc;
     border: 1px solid var(--panel-border);
     color: var(--text-sec);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .filter-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    transform: translateY(-1px);
+    background: #e2e8f0;
+    color: var(--text-primary);
 }
 
 .filter-btn.active {
     background: var(--accent);
     border-color: var(--accent);
-    color: #000;
-    font-weight: 700;
-    box-shadow: 0 0 10px var(--accent-glow);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 6px var(--accent-glow);
 }
 
 .btn-outline {
     margin-top: 10px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    background: #fff;
     border: 1px solid var(--accent);
     color: var(--accent);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     transition: all 0.3s;
 }
 
 .btn-outline:hover {
     background: var(--accent);
-    color: #000;
-    box-shadow: 0 0 15px var(--accent-glow);
+    color: #fff;
 }
 
 /* DASHBOARD CONTENT */
@@ -327,26 +317,26 @@ aside h3 {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    background: #f8fafc;
 }
 
 /* TABS NAV */
 .tabs-nav {
     display: flex;
-    background: rgba(10, 25, 47, 0.8);
-    backdrop-filter: blur(10px);
+    background: #ffffff;
     border-bottom: 1px solid var(--panel-border);
     position: sticky;
     top: 0;
     z-index: 5;
-    padding: 0 35px;
+    padding: 0 25px;
 }
 
 .tab-btn {
     background: transparent;
     border: none;
     color: var(--text-sec);
-    padding: 20px 25px;
-    font-size: 15px;
+    padding: 16px 20px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
@@ -355,38 +345,33 @@ aside h3 {
 
 .tab-btn:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.05);
+    background: #f8fafc;
 }
 
 .tab-btn.active {
     color: var(--accent);
     border-bottom: 3px solid var(--accent);
-    background: linear-gradient(to top, rgba(0, 240, 255, 0.15), transparent);
-    text-shadow: 0 0 10px var(--accent-glow);
+    background: #f0f9ff;
 }
 
 /* TABS CONTENT */
 .tab-content {
-    padding: 30px 35px;
+    padding: 25px;
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    gap: 20px;
 }
 
 .tab-title {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 15px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    display: inline-block;
-    border-bottom: 2px solid var(--accent);
-    padding-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 .charts-row {
     display: flex;
-    gap: 25px;
+    gap: 20px;
     flex: 1;
 }
 
@@ -394,19 +379,20 @@ aside h3 {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    /* Más sutil */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    background: #ffffff;
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 }
 
 .chart-container h3 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 15px;
-    color: #fff;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 10px;
 }
 
 .canvas-wrapper {
@@ -414,6 +400,14 @@ aside h3 {
     position: relative;
     min-height: 280px;
     width: 100%;
+}
+
+.chart-note {
+    font-size: 11px;
+    color: var(--text-sec);
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed #e2e8f0;
 }
 
 /* ANIMATIONS */
@@ -446,25 +440,12 @@ aside h3 {
         min-width: 100%;
         border-right: none;
         border-bottom: 1px solid var(--panel-border);
-        max-height: 400px;
+        max-height: 300px;
     }
 
     .tabs-nav {
         flex-wrap: nowrap;
         overflow-x: auto;
         padding: 0;
-    }
-
-    .tab-btn {
-        flex: 1;
-        text-align: center;
-        padding: 15px 10px;
-        font-size: 14px;
-        white-space: nowrap;
-    }
-
-    .navbar {
-        flex-direction: column;
-        gap: 15px;
     }
 }

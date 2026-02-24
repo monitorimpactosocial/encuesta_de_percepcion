@@ -13,7 +13,7 @@ let activeFilters = {
 };
 
 // CONFIGURACIÓN CHART.JS GLOBALES
-Chart.defaults.color = '#e2e8f0'; // Color de fuente más visible
+Chart.defaults.color = '#475569'; // Color de fuente oscuro para Light Theme
 Chart.defaults.font.size = 13;    // Aumento del tamaño para legibilidad de ejes
 Chart.defaults.font.family = "'Inter', sans-serif";
 Chart.register(ChartDataLabels);
@@ -187,9 +187,13 @@ document.addEventListener("DOMContentLoaded", () => {
         renderSingleColumnChart('chartIngresos', 'bar', colIngresos);
         renderMultiColumnChart('chartTrabajo', 'bar', 'Situación Laboral (%)', configOcupacion);
 
-        // RENDER MODULE 4 (PANEL EXCLUSIVE)
-        renderMultiColumnChart('chartPanelPositivos', 'line', 'Evol. Panel Positivos', configAspectosPositivos);
-        renderMultiColumnChart('chartPanelExpectativas', 'line', 'Evol. Panel Expectativas', configExpectativas);
+        // RENDER MODULE 4 (EVOLUCION CLAVE 2022-2025)
+        renderEvolPositiva();
+        renderMultiColumnChart('chartEvolFaltaLaboral', 'bar', 'Falta Oferta Laboral (%)', ['Poca oferta laboral']);
+        renderMultiColumnChart('chartEvolAtributos', 'bar', 'Atributos (%)', ['Tranquilidad', 'La gente']);
+        renderEvolProduccion();
+        renderMultiColumnChart('chartEvolBeneficios', 'line', 'Beneficios (%)', ['Mas puestos de trabajo para personas de la zona', 'Mejoras o nuevos caminos o rutas en zonas aledaas']);
+        renderMultiColumnChart('chartEvolCanales', 'bar', 'Canales (%)', configMedios);
     }
 
     // Para contar presencias ("Sí") cruzando múltiples columnas
@@ -307,6 +311,89 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         drawChart(ctx, canvasId, type, labels, datasets);
+    }
+
+    // CUSTOM RENDERS PARA TAB EVOLUCION
+    function renderEvolPositiva() {
+        const ctx = document.getElementById('chartEvolPositiva').getContext('2d');
+        if (charts['chartEvolPositiva']) charts['chartEvolPositiva'].destroy();
+
+        let years = Array.from(activeFilters['año']);
+        if (years.length === 0) {
+            years = [...new Set(currentData.map(d => String(d['año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
+        }
+
+        let datasets = [];
+        let dataPoints = [];
+
+        years.forEach(year => {
+            let yearData = currentData.filter(d => String(d['año']) === year);
+            const total = yearData.length;
+
+            // Calculamos gente que reporto algun aspecto positivo (no marco "No vio algun aspecto positivo aun")
+            let countPositive = yearData.filter(d => {
+                let negResp = String(d['no vio algun aspecto positivo aun']).trim().toLowerCase();
+                return !(negResp === 'no vio algun aspecto positivo aun' || negResp === 'no vi algún aspecto positivo aún' || negResp === 'true');
+            }).length;
+
+            let pct = total > 0 ? ((countPositive / total) * 100).toFixed(1) : 0;
+            dataPoints.push(pct);
+        });
+
+        datasets.push({
+            label: 'Percepción Positiva (%)',
+            data: dataPoints,
+            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+            borderColor: '#0284c7', // Paracel blue
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3
+        });
+
+        drawChart(ctx, 'chartEvolPositiva', 'line', years, datasets);
+    }
+
+    function renderEvolProduccion() {
+        const ctx = document.getElementById('chartEvolProduccion').getContext('2d');
+        if (charts['chartEvolProduccion']) charts['chartEvolProduccion'].destroy();
+
+        let years = Array.from(activeFilters['año']);
+        if (years.length === 0) {
+            years = [...new Set(currentData.map(d => String(d['año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
+        }
+
+        let labels = ['No sabe / NS/NR', 'Celulosa', 'Eucalipto / Madera'];
+        let datasets = [];
+
+        years.forEach(year => {
+            let yearData = currentData.filter(d => String(d['año']) === year);
+            const total = yearData.length;
+
+            let countNonsabe = 0;
+            let countCelulosa = 0;
+            let countEucalipto = 0;
+
+            yearData.forEach(d => {
+                let ans = String(d['que crees que producira la fabrica de paracel']).toLowerCase();
+                if (ans.includes('no sabe') || ans.includes('ns nr') || ans.includes('ns/nr') || ans.includes('nan') || ans === '-') countNonsabe++;
+                else if (ans.includes('celulosa') || ans.includes('papel')) countCelulosa++;
+                else if (ans.includes('eucalipto') || ans.includes('madera')) countEucalipto++;
+            });
+
+            datasets.push({
+                label: `Respuestas - ${year}`,
+                data: total > 0 ? [
+                    ((countNonsabe / total) * 100).toFixed(1),
+                    ((countCelulosa / total) * 100).toFixed(1),
+                    ((countEucalipto / total) * 100).toFixed(1)
+                ] : [0, 0, 0],
+                backgroundColor: (yearColors[year] || defaultColor).bg,
+                borderColor: (yearColors[year] || defaultColor).border,
+                borderWidth: 1
+            });
+        });
+
+        drawChart(ctx, 'chartEvolProduccion', 'bar', labels, datasets);
     }
 
     // Motor de pintado genérico
