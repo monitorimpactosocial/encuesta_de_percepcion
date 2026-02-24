@@ -27,8 +27,8 @@ const configOcupacion = ['no trabaja actualmente', 'funcionario público', 'empl
 
 // COLUMNAS DIRECTAS PARA AGRUPAR (Pie/Bar normal por categorías únicas)
 const colTemores = 'un temor';
-const colEstudios = 'podría indicarnos cuál es su nivel de estudios';
-const colIngresos = 'podría indicarnos en qué rango se encuentra sus ingresos económicos familiaresesto quiere decir la suma de lo que ganan todas las personas que trabajan en la casa';
+const colEstudios = 'podria indicarnos cual es su nivel de estudios';
+const colIngresos = 'podria indicarnos en que rango se encuentra sus ingresos economicos familiaresesto quiere decir la suma de lo que ganan todas las personas que trabajan en la casa';
 
 // CONSTANTES Y COLORES DE GRÁFICOS
 const yearColors = {
@@ -93,8 +93,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const targetId = btn.getAttribute('data-tab');
             document.getElementById(targetId).style.display = 'flex';
 
-            // Redibujar gráficos para solucionar bug de canvas 0x0 en divs ocultos
-            updateDashboard();
+            // Redibujar gráficos para solucionar bug de canvas 0x0 en divs ocultos (Requerimos setTimeout para esperar el layout rendering nativo)
+            setTimeout(() => {
+                updateDashboard();
+            }, 50);
         });
     });
 
@@ -103,8 +105,22 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('login-screen').style.display = "none";
         document.getElementById('dashboard-screen').style.display = "flex";
 
+        // Pre-procesar columna de percepcion
+        encuestasData.forEach(d => {
+            let negResp = String(d['no vio algun aspecto positivo aun'] || '').trim().toLowerCase();
+            let isPositiva = !(negResp === 'no vio algun aspecto positivo aun' || negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true' || negResp === 'nan' || negResp === '');
+
+            let probResp = String(d['un temor'] || '').trim().toLowerCase();
+            let isNegativa = !isPositiva && (probResp !== '' && probResp !== 'nan' && probResp !== 'ninguno/a' && probResp !== 'false');
+
+            if (isPositiva) d['percepción_clasificada'] = 'Positiva';
+            else if (isNegativa) d['percepción_clasificada'] = 'Negativa';
+            else d['percepción_clasificada'] = 'Neutra';
+        });
+
         // Crear botones de filtros
         createFilterButtons('filter-muestra', 'es_panel');
+        createFilterButtons('filter-percepcion', 'percepción_clasificada');
         createFilterButtons('filter-anio', 'año');
         createFilterButtons('filter-genero', 'género');
         createFilterButtons('filter-edad', 'edad');
