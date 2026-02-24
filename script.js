@@ -82,6 +82,9 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.add('active');
             const targetId = btn.getAttribute('data-tab');
             document.getElementById(targetId).style.display = 'flex';
+
+            // Redibujar gráficos para solucionar bug de canvas 0x0 en divs ocultos
+            updateDashboard();
         });
     });
 
