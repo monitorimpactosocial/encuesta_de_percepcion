@@ -4,6 +4,7 @@ let charts = {};
 
 // ESTADOS DE FILTROS (Múltiples selecciones permitidas por categoría)
 let activeFilters = {
+    'es_panel': new Set(),
     'año': new Set(),
     'género': new Set(),
     'edad': new Set(),
@@ -27,6 +28,14 @@ const configOcupacion = ['no trabaja actualmente', 'funcionario público', 'empl
 const colTemores = 'un temor';
 const colEstudios = 'podría indicarnos cuál es su nivel de estudios';
 const colIngresos = 'podría indicarnos en qué rango se encuentra sus ingresos económicos familiaresesto quiere decir la suma de lo que ganan todas las personas que trabajan en la casa';
+
+// CONSTANTES Y COLORES DE GRÁFICOS
+const yearColors = {
+    '2022': { bg: 'rgba(0, 240, 255, 0.75)', border: 'rgba(0, 240, 255, 1)' }, // Cyan Neon
+    '2023': { bg: 'rgba(255, 0, 128, 0.75)', border: 'rgba(255, 0, 128, 1)' }, // Magenta Neon
+    '2024': { bg: 'rgba(144, 255, 0, 0.75)', border: 'rgba(144, 255, 0, 1)' }  // Lime Neon
+};
+const defaultColor = { bg: 'rgba(0, 240, 255, 0.75)', border: 'rgba(0, 240, 255, 1)' };
 
 // INICIALIZACIÓN
 document.addEventListener("DOMContentLoaded", () => {
@@ -63,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById('btn-reset').addEventListener('click', () => {
-        activeFilters = { 'año': new Set(), 'género': new Set(), 'edad': new Set(), 'nse': new Set(), 'comunidad': new Set() };
+        activeFilters = { 'es_panel': new Set(), 'año': new Set(), 'género': new Set(), 'edad': new Set(), 'nse': new Set(), 'comunidad': new Set() };
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
         updateDashboard();
     });
@@ -94,6 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('dashboard-screen').style.display = "flex";
 
         // Crear botones de filtros
+        createFilterButtons('filter-muestra', 'es_panel');
         createFilterButtons('filter-anio', 'año');
         createFilterButtons('filter-genero', 'género');
         createFilterButtons('filter-edad', 'edad');
@@ -163,18 +173,11 @@ document.addEventListener("DOMContentLoaded", () => {
         renderSingleColumnChart('chartEstudios', 'bar', colEstudios);
         renderSingleColumnChart('chartIngresos', 'bar', colIngresos);
         renderMultiColumnChart('chartTrabajo', 'bar', 'Situación Laboral (%)', configOcupacion);
+
+        // RENDER MODULE 4 (PANEL EXCLUSIVE)
+        renderMultiColumnChart('chartPanelPositivos', 'line', 'Evol. Panel Positivos', configAspectosPositivos);
+        renderMultiColumnChart('chartPanelExpectativas', 'line', 'Evol. Panel Expectativas', configExpectativas);
     }
-
-    // ----------------------------------------------------
-    // HELPERS DE GRAFICACIÓN CHART.JS POR AÑO (SERIES)
-    // ----------------------------------------------------
-
-    const yearColors = {
-        '2022': { bg: 'rgba(0, 240, 255, 0.75)', border: 'rgba(0, 240, 255, 1)' }, // Cyan Neon
-        '2023': { bg: 'rgba(255, 0, 128, 0.75)', border: 'rgba(255, 0, 128, 1)' }, // Magenta Neon
-        '2024': { bg: 'rgba(144, 255, 0, 0.75)', border: 'rgba(144, 255, 0, 1)' }  // Lime Neon
-    };
-    const defaultColor = { bg: 'rgba(0, 240, 255, 0.75)', border: 'rgba(0, 240, 255, 1)' };
 
     // Para contar presencias ("Sí") cruzando múltiples columnas
     function renderMultiColumnChart(canvasId, type, label, keysToCount) {
