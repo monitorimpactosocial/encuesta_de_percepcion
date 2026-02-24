@@ -205,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // RENDER MODULE 1
         renderKPIs(currentData);
+        renderSingleColumnChart('chartComunidades', 'bar', 'comunidad');
         renderMultiColumnChart('chartPositivos', 'bar', 'Aspectos Positivos (%)', configAspectosPositivos);
         renderMultiColumnChart('chartNegativos', 'bar', 'Problemas / Negativos (%)', configAspectosNegativos);
 

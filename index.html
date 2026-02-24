@@ -150,152 +150,193 @@
                 <div class="tab-content active" id="tab-comunidad">
                     <h2 class="tab-title">Percepción de la Comunidad</h2>
                     <div class="charts-row">
-                        <div class="chart-container glass-panel">
-                            <h3 title="Comparación porcentual de aspectos positivos mencionados a través de los años.">
-                                Aspectos Positivos de la Comunidad <span style="cursor:help;"
-                                    title="Valores en porcentaje de menciones totales en el año">(i)</span></h3>
-                            <div class="canvas-wrapper"><canvas id="chartPositivos"></canvas></div>
-                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">Nota:
-                                Iteración anual. Fuente: Encuestas Nauta (2022-2025).</p>
+                        <div class="chart-container glass-panel" style="flex: 100%; max-width: 100%;">
+                            <h3 title="P2: Comunidad (Distribución de la Muestra)">Distribución por Comunidades
+                                Encuestadas <span style="cursor:help;"
+                                    title="P2: Comunidad (Georeferenciación)">(i)</span></h3>
+                            <div class="canvas-wrapper"><canvas id="chartComunidades"></canvas></div>
+                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                                <strong>P2:</strong> Mapeo de comunidades de residencia de los encuestados.</p>
                         </div>
                     </div>
-                    <div class="charts-row">
-                        <div class="chart-container glass-panel">
-                            <h3>Problemas / Aspectos Negativos</h3>
-                            <div class="canvas-wrapper"><canvas id="chartNegativos"></canvas></div>
-                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">Nota:
-                                Muestra evolución de barreras. Elaboración propia.</p>
-                        </div>
+                    <div class="chart-container glass-panel">
+                        <h3
+                            title="P15: ¿Cuáles son los principales aspectos positivos de vivir en tu ciudad/ comunidad?">
+                            Aspectos Positivos de la Comunidad <span style="cursor:help;"
+                                title="P15: ¿Cuáles son los principales aspectos positivos de vivir en tu ciudad/ comunidad?">(i)</span>
+                        </h3>
+                        <div class="canvas-wrapper"><canvas id="chartPositivos"></canvas></div>
+                        <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                            <strong>P15:</strong> ¿Cuáles son los principales aspectos positivos de vivir en tu
+                            ciudad/ comunidad?
+                        </p>
                     </div>
                 </div>
-
-                <!-- TAB 2: PARACEL Y COMUNICACION -->
-                <div class="tab-content" id="tab-paracel" style="display: none;">
-                    <h2 class="tab-title">Percepción sobre Paracel</h2>
-                    <div class="charts-row">
-                        <div class="chart-container glass-panel">
-                            <h3>Expectativas Positivas sobre la Fábrica</h3>
-                            <div class="canvas-wrapper"><canvas id="chartExpectativas"></canvas></div>
-                        </div>
-                        <div class="chart-container glass-panel">
-                            <h3 title="Desglose general de temores en todos los años seleccionados">Temores /
-                                Preocupaciones sobre la Fábrica (General)</h3>
-                            <div class="canvas-wrapper"><canvas id="chartTemores"></canvas></div>
-                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
-                                Interpretación: Distribución porcentual agregada de principales temores.</p>
-                        </div>
-                    </div>
-                    <div class="charts-row">
-                        <div class="chart-container glass-panel">
-                            <h3>Recepción de Información (Medios) <span style="cursor:help;"
-                                    title="Barras agrupadas por año comparando penetración mediática">(i)</span></h3>
-                            <div class="canvas-wrapper"><canvas id="chartMedios"></canvas></div>
-                        </div>
+                <div class="charts-row">
+                    <div class="chart-container glass-panel">
+                        <h3 title="P16: ¿Cuáles son los principales problemas identificados en tu ciudad/comunidad?">
+                            Problemas / Aspectos Negativos <span style="cursor:help;"
+                                title="P16: ¿Cuáles son los principales problemas identificados en tu ciudad/comunidad?">(i)</span>
+                        </h3>
+                        <div class="canvas-wrapper"><canvas id="chartNegativos"></canvas></div>
+                        <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                            <strong>P16:</strong> ¿Cuáles son los principales problemas identificados en tu
+                            ciudad/comunidad?
+                        </p>
                     </div>
                 </div>
-
-                <!-- TAB 3: PERFIL DEMOGRAFICO -->
-                <div class="tab-content" id="tab-perfil" style="display: none;">
-                    <h2 class="tab-title">Perfil Sociodemográfico</h2>
-
-                    <div class="charts-row">
-                        <div class="chart-container glass-panel">
-                            <h3 title="Comparación temporal de nivel educativo alcanzado">Nivel de Estudios <span
-                                    style="cursor:help; color:var(--paracel-blue);"
-                                    title="Gráfico de series por año">(i)</span></h3>
-                            <div class="canvas-wrapper" style="min-height: 350px;"><canvas id="chartEstudios"></canvas>
-                            </div>
-                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
-                                Interpretación: Distribución educacional de encuestados iterando entre cada ola en %.
-                                Fuente: Datos Encuesta Nauta.</p>
-                        </div>
-                        <div class="chart-container glass-panel">
-                            <h3 title="Ocupación principal actual">Situación Laboral <span
-                                    style="cursor:help; color:var(--paracel-blue);"
-                                    title="Gráfico agrupado y seriado por año">(i)</span></h3>
-                            <div class="canvas-wrapper" style="min-height: 350px;"><canvas id="chartTrabajo"></canvas>
-                            </div>
-                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
-                                Interpretación: Evolución porcentual de los distintos sectores de trabajo de la
-                                comunidad encuestada.</p>
-                        </div>
-                    </div>
-
-                    <div class="charts-row">
-                        <div class="chart-container glass-panel">
-                            <h3 title="Ingresos familiares sumados de hogar">Ingresos Familiares (Series Interanuales)
-                            </h3>
-                            <div class="canvas-wrapper"><canvas id="chartIngresos"></canvas></div>
-                            <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">Nota:
-                                Auto-reportado según bandas de ingreso económico.</p>
-                        </div>
-                    </div>
-
-                </div> <!-- Fin Tab 3 -->
-
-                <!-- TAB 4: EVOLUCION -->
-                <div class="tab-content" id="tab-evolucion" style="display: none;">
-                    <h2 class="tab-title" style="color:var(--accent); border-bottom-color:var(--orange-accent);">
-                        Indicadores Evolutivos Clave (2022-2025)</h2>
-                    <p style="color:var(--text-sec); font-size:14px; margin-bottom:15px;">
-                        Estos gráficos muestran los cambios más significativos en la percepción y situación de las
-                        comunidades a través del tiempo. Se recomienda visualizar con todos los años seleccionados
-                        (marcando con la tecla CTRL).
-                    </p>
-
-                    <div class="charts-row">
-                        <div class="chart-container">
-                            <h3 title="Tendencia de favorabilidad a lo largo de los años">1. Percepción Positiva de
-                                Paracel (%)</h3>
-                            <div class="canvas-wrapper"><canvas id="chartEvolPositiva"></canvas></div>
-                            <p class="chart-note">Interpretación: Curva histórica que visualiza el pico de aceptación y
-                                desgaste de expectativas (línea).</p>
-                        </div>
-                        <div class="chart-container">
-                            <h3 title="El problema crítico en constante crecimiento">2. Falta de Oferta Laboral como
-                                Problema (%)</h3>
-                            <div class="canvas-wrapper"><canvas id="chartEvolFaltaLaboral"></canvas></div>
-                            <p class="chart-note">Interpretación: Preocupación comunitaria constante por el empleo local
-                                vs avances del proyecto (barras).</p>
-                        </div>
-                    </div>
-
-                    <div class="charts-row">
-                        <div class="chart-container">
-                            <h3 title="Cambio en atributos líderes de las comunidades">3. Atributos: Tranquilidad vs La
-                                Gente</h3>
-                            <div class="canvas-wrapper"><canvas id="chartEvolAtributos"></canvas></div>
-                            <p class="chart-note">Interpretación: Desplazamiento de "La tranquilidad" por "La gente"
-                                como aspecto más valorado (barras agrupadas).</p>
-                        </div>
-                        <div class="chart-container">
-                            <h3 title="Reducción del desconocimiento 'No sabe' vs 'Celulosa/Eucalipto'">4.
-                                Desconocimiento vs Comprensión</h3>
-                            <div class="canvas-wrapper"><canvas id="chartEvolProduccion"></canvas></div>
-                            <p class="chart-note">Interpretación: Reducción del "NS/NR" sobre la producción a favor del
-                                "Eucalipto/Celulosa" (áreas/barras).</p>
-                        </div>
-                    </div>
-
-                    <div class="charts-row">
-                        <div class="chart-container">
-                            <h3 title="Creación de puestos vs Mejoras en caminos">5. Beneficios vs Expectativas Reales
-                            </h3>
-                            <div class="canvas-wrapper"><canvas id="chartEvolBeneficios"></canvas></div>
-                            <p class="chart-note">Interpretación: Caída en percepción de nuevos empleos contra un
-                                aparente aumento en valoración infraestructural (línea).</p>
-                        </div>
-                        <div class="chart-container">
-                            <h3 title="Fuentes de información dominantes">6. Canales de Comunicación Relevantes</h3>
-                            <div class="canvas-wrapper"><canvas id="chartEvolCanales"></canvas></div>
-                            <p class="chart-note">Interpretación: Crecimiento de canales directos y digitales frente a
-                                rumores (barras apiladas o sectores).</p>
-                        </div>
-                    </div>
-                </div> <!-- Fin Tab 4 -->
-
-            </main>
         </div>
+
+        <!-- TAB 2: PARACEL Y COMUNICACION -->
+        <div class="tab-content" id="tab-paracel" style="display: none;">
+            <h2 class="tab-title">Percepción sobre Paracel</h2>
+            <div class="charts-row">
+                <div class="chart-container glass-panel">
+                    <h3
+                        title="P23: ¿Qué aspectos positivos ya viste en tu ciudad/comunidad desde que empezó la construcción de Paracel?">
+                        Expectativas Positivas sobre la Fábrica <span style="cursor:help;"
+                            title="P23: ¿Qué aspectos positivos ya viste en tu ciudad/comunidad desde que empezó la construcción de Paracel?">(i)</span>
+                    </h3>
+                    <div class="canvas-wrapper"><canvas id="chartExpectativas"></canvas></div>
+                    <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                        <strong>P23:</strong> ¿Qué aspectos positivos ya viste en tu ciudad/comunidad desde que
+                        empezó la construcción de Paracel?
+                    </p>
+                </div>
+                <div class="chart-container glass-panel">
+                    <h3 title="P25: ¿Crees que hay algún aspecto negativo en el proyecto de Paracel? ¿Cuáles?">
+                        Temores /
+                        Preocupaciones sobre la Fábrica (General) <span style="cursor:help;"
+                            title="P25: ¿Crees que hay algún aspecto negativo en el proyecto de Paracel? ¿Cuáles?">(i)</span>
+                    </h3>
+                    <div class="canvas-wrapper"><canvas id="chartTemores"></canvas></div>
+                    <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                        <strong>P25:</strong> ¿Crees que hay algún aspecto negativo en el proyecto de Paracel?
+                        ¿Cuáles?
+                    </p>
+                </div>
+            </div>
+            <div class="charts-row">
+                <div class="chart-container glass-panel">
+                    <h3
+                        title="P20: ¿A través de qué medio/s te enteraste sobre la empresa de producción de celulosa Paracel?">
+                        Recepción de Información (Medios) <span style="cursor:help;"
+                            title="P20: ¿A través de qué medio/s te enteraste sobre la empresa de producción de celulosa Paracel?">(i)</span>
+                    </h3>
+                    <div class="canvas-wrapper"><canvas id="chartMedios"></canvas></div>
+                    <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                        <strong>P20:</strong> ¿A través de qué medio/s te enteraste sobre la empresa de
+                        producción de celulosa Paracel?
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: PERFIL DEMOGRAFICO -->
+        <div class="tab-content" id="tab-perfil" style="display: none;">
+            <h2 class="tab-title">Perfil Sociodemográfico</h2>
+
+            <div class="charts-row">
+                <div class="chart-container glass-panel">
+                    <h3 title="P7: ¿Cuál es tu nivel de estudios?">Nivel de Estudios <span
+                            style="cursor:help; color:var(--paracel-blue);"
+                            title="P7: ¿Cuál es tu nivel de estudios?">(i)</span></h3>
+                    <div class="canvas-wrapper" style="min-height: 350px;"><canvas id="chartEstudios"></canvas>
+                    </div>
+                    <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                        <strong>P7:</strong> ¿Cuál es tu nivel de estudios?
+                    </p>
+                </div>
+                <div class="chart-container glass-panel">
+                    <h3 title="P10: ¿Cuál es tu ocupación actual?">Situación Laboral <span
+                            style="cursor:help; color:var(--paracel-blue);"
+                            title="P10: ¿Cuál es tu ocupación actual?">(i)</span></h3>
+                    <div class="canvas-wrapper" style="min-height: 350px;"><canvas id="chartTrabajo"></canvas>
+                    </div>
+                    <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                        <strong>P10:</strong> ¿Cuál es tu ocupación actual?
+                    </p>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="chart-container glass-panel">
+                    <h3 title="P8: ¿Cuál es el ingreso mensual familiar en tu hogar?">Ingresos Familiares
+                        (Series Interanuales) <span style="cursor:help;"
+                            title="P8: ¿Cuál es el ingreso mensual familiar en tu hogar?">(i)</span>
+                    </h3>
+                    <div class="canvas-wrapper"><canvas id="chartIngresos"></canvas></div>
+                    <p class="chart-note" style="font-size:11px; color:var(--text-sec); margin-top:10px;">
+                        <strong>P8:</strong> ¿Cuál es el ingreso mensual familiar en tu hogar?
+                    </p>
+                </div>
+            </div>
+
+        </div> <!-- Fin Tab 3 -->
+
+        <!-- TAB 4: EVOLUCION -->
+        <div class="tab-content" id="tab-evolucion" style="display: none;">
+            <h2 class="tab-title" style="color:var(--accent); border-bottom-color:var(--orange-accent);">
+                Indicadores Evolutivos Clave (2022-2025)</h2>
+            <p style="color:var(--text-sec); font-size:14px; margin-bottom:15px;">
+                Estos gráficos muestran los cambios más significativos en la percepción y situación de las
+                comunidades a través del tiempo. Se recomienda visualizar con todos los años seleccionados
+                (marcando con la tecla CTRL).
+            </p>
+
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3 title="Tendencia de favorabilidad a lo largo de los años">1. Percepción Positiva de
+                        Paracel (%)</h3>
+                    <div class="canvas-wrapper"><canvas id="chartEvolPositiva"></canvas></div>
+                    <p class="chart-note">Interpretación: Curva histórica que visualiza el pico de aceptación y
+                        desgaste de expectativas (línea).</p>
+                </div>
+                <div class="chart-container">
+                    <h3 title="El problema crítico en constante crecimiento">2. Falta de Oferta Laboral como
+                        Problema (%)</h3>
+                    <div class="canvas-wrapper"><canvas id="chartEvolFaltaLaboral"></canvas></div>
+                    <p class="chart-note">Interpretación: Preocupación comunitaria constante por el empleo local
+                        vs avances del proyecto (barras).</p>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3 title="Cambio en atributos líderes de las comunidades">3. Atributos: Tranquilidad vs La
+                        Gente</h3>
+                    <div class="canvas-wrapper"><canvas id="chartEvolAtributos"></canvas></div>
+                    <p class="chart-note">Interpretación: Desplazamiento de "La tranquilidad" por "La gente"
+                        como aspecto más valorado (barras agrupadas).</p>
+                </div>
+                <div class="chart-container">
+                    <h3 title="Reducción del desconocimiento 'No sabe' vs 'Celulosa/Eucalipto'">4.
+                        Desconocimiento vs Comprensión</h3>
+                    <div class="canvas-wrapper"><canvas id="chartEvolProduccion"></canvas></div>
+                    <p class="chart-note">Interpretación: Reducción del "NS/NR" sobre la producción a favor del
+                        "Eucalipto/Celulosa" (áreas/barras).</p>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3 title="Creación de puestos vs Mejoras en caminos">5. Beneficios vs Expectativas Reales
+                    </h3>
+                    <div class="canvas-wrapper"><canvas id="chartEvolBeneficios"></canvas></div>
+                    <p class="chart-note">Interpretación: Caída en percepción de nuevos empleos contra un
+                        aparente aumento en valoración infraestructural (línea).</p>
+                </div>
+                <div class="chart-container">
+                    <h3 title="Fuentes de información dominantes">6. Canales de Comunicación Relevantes</h3>
+                    <div class="canvas-wrapper"><canvas id="chartEvolCanales"></canvas></div>
+                    <p class="chart-note">Interpretación: Crecimiento de canales directos y digitales frente a
+                        rumores (barras apiladas o sectores).</p>
+                </div>
+            </div>
+        </div> <!-- Fin Tab 4 -->
+
+        </main>
+    </div>
     </div>
 
     <!-- JS -->
