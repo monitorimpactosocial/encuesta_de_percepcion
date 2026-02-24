@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Interactivo - Percepción Social Paracel</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <!-- Data -->
+    <script src="data.js"></script>
+</head>
+<body>
+
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-screen" class="glass-container">
+        <div class="login-box">
+            <img src="LOGO_PARA_FONDO_NEGRO.png" alt="Logo Paracel" class="logo-login">
+            <h2>Acceso al Dashboard</h2>
+            <p>Monitoreo de Impacto Social</p>
+            <div class="input-group">
+                <input type="text" id="username" placeholder="Usuario" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="Contraseña">
+            </div>
+            <p id="login-error" class="error-msg" style="display: none;">Credenciales incorrectas.</p>
+            <button id="btn-login" class="btn-primary">Ingresar</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA DEL DASHBOARD (Oculta por defecto) -->
+    <div id="dashboard-screen" style="display: none;">
+        
+        <!-- NAVBAR -->
+        <nav class="navbar glass-navbar">
+            <div class="nav-left">
+                <img src="LOGO_PARA_FONDO_NEGRO.png" alt="Logo Paracel" class="logo-nav">
+                <h1>Monitoreo de Percepción (2022 - 2024)</h1>
+            </div>
+            <div class="nav-right">
+                <span id="total-encuestas">Total Encuestas: 0</span>
+                <button id="btn-logout" class="btn-secondary">Cerrar Sesión</button>
+            </div>
+        </nav>
+
+        <div class="main-layout">
+            <!-- SIDEBAR FILTROS -->
+            <aside class="sidebar glass-panel">
+                <h3>Filtros</h3>
+                
+                <div class="filter-group">
+                    <label>Año de la Ola</label>
+                    <select id="filter-anio">
+                        <option value="all">Todos los años</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Género</label>
+                    <select id="filter-genero">
+                        <option value="all">Todos</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Rango de Edad</label>
+                    <select id="filter-edad">
+                        <option value="all">Todas las edades</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Nivel Socioeconómico (NSE)</label>
+                    <select id="filter-nse">
+                        <option value="all">Todos los NSE</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Sector de Impacto</label>
+                    <select id="filter-sector">
+                        <option value="all">Todos los sectores</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Comunidad</label>
+                    <select id="filter-comunidad">
+                        <option value="all">Todas las comunidades</option>
+                    </select>
+                </div>
+                
+                <button id="btn-reset" class="btn-outline">Limpiar Filtros</button>
+            </aside>
+
+            <!-- ZONA DE GRAFICOS -->
+            <main class="dashboard-content">
+                
+                <!-- Fila 1 -->
+                <div class="charts-row">
+                    <div class="chart-container glass-panel">
+                        <h3>Aspectos Positivos de la Comunidad</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="chartPositivos"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container glass-panel">
+                        <h3>Problemas / Aspectos Negativos</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="chartNegativos"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fila 2 -->
+                <div class="charts-row">
+                    <div class="chart-container glass-panel">
+                        <h3>Expectativas sobre la Fábrica Paracel</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="chartExpectativas"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container glass-panel">
+                        <h3>Recepción de Información (Medios)</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="chartMedios"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- JS -->
+    <script src="script.js"></script>
+</body>
+</html>
