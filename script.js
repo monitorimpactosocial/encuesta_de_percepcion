@@ -150,7 +150,13 @@ document.addEventListener("DOMContentLoaded", () => {
             // Para ser robustos, si 'not null' y es string, lo contamos
             let count = currentData.filter(d => {
                 let v = d[key];
-                return v !== null && v !== "" && String(v).trim() !== "-";
+                if (v === null || v === undefined) return false;
+                if (typeof v === 'number' && isNaN(v)) return false;
+
+                let strV = String(v).trim().toLowerCase();
+                if (strV === "" || strV === "-" || strV === "nan" || strV === "ninguno" || strV === "ninguna" || strV === "ninguno/a") return false;
+
+                return true;
             }).length;
 
             let pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
