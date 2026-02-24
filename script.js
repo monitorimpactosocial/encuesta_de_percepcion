@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // EVENTOS DE LOGIN
     btnLogin.addEventListener('click', () => {
-        if (inputUser.value === "admin" && inputPass.value === "paracel2026") {
+        if (inputUser.value === "user" && inputPass.value === "123") {
             localStorage.setItem("paracel_logged", "true");
             loginError.style.display = "none";
             showDashboard();
