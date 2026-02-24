@@ -198,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let count = yearData.filter(d => {
                     let v = d[key];
                     if (v === null || v === undefined) return false;
-                    if (typeof v === 'number' && isNaN(v)) return false;
+                    // Ya NO filtramos con isNaN genérico porque 'v' puede ser texto como "Oferta laboral"
                     let strV = String(v).trim().toLowerCase();
                     if (strV === "" || strV === "-" || strV === "nan" || strV === "ninguno" || strV === "ninguna") return false;
                     return true;
@@ -240,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
         currentData.forEach(d => {
             let v = d[colName];
             if (v === null || v === undefined) return;
-            if (typeof v === 'number' && isNaN(v)) return;
+            // Quitamos la comprobación isNaN porque un texto es isNaN(true)
             let strV = String(v).trim();
             if (strV.toLowerCase() === "nan" || strV === "" || strV === "-") return;
             allValidAnswers.add(strV);
