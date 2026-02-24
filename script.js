@@ -5,6 +5,7 @@ let charts = {};
 // ESTADOS DE FILTROS (Múltiples selecciones permitidas por categoría)
 let activeFilters = {
     'es_panel': new Set(),
+    'percepción_clasificada': new Set(),
     'año': new Set(),
     'género': new Set(),
     'edad': new Set(),
@@ -135,9 +136,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const container = document.getElementById(containerId);
         container.innerHTML = ''; // limpiar
 
-        // Extraer valores únicos válidos
-        const uniqueValues = [...new Set(encuestasData.map(d => d[colName]))]
-            .filter(v => v !== null && v !== undefined && v !== "" && String(v).toLowerCase() !== "nan" && String(v).toLowerCase() !== "ninguno/a")
+        // Extraer valores únicos válidos (convertirlos a minúscula para la variable del sistema)
+        const uniqueValues = [...new Set(encuestasData.map(d => String(d[colName]).toLowerCase()))]
+            .filter(v => v !== null && v !== undefined && v !== "" && v !== "nan" && v !== "ninguno/a")
             .sort();
 
         uniqueValues.forEach(val => {
@@ -212,7 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Comprobar cada dimensión si tiene algún filtro activo (OR dentro de la dimensión, AND entre dimensiones)
         for (const [colName, selectedSet] of Object.entries(activeFilters)) {
             if (selectedSet.size > 0) {
-                filtered = filtered.filter(d => selectedSet.has(String(d[colName])));
+                filtered = filtered.filter(d => selectedSet.has(String(d[colName]).toLowerCase()));
             }
         }
 
