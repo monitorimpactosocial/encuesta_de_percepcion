@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +15,7 @@
     <!-- Data -->
     <script src="data.js"></script>
 </head>
+
 <body>
 
     <!-- PANTALLA DE LOGIN -->
@@ -35,7 +37,7 @@
 
     <!-- PANTALLA DEL DASHBOARD (Oculta por defecto) -->
     <div id="dashboard-screen" style="display: none;">
-        
+
         <!-- NAVBAR -->
         <nav class="navbar glass-navbar">
             <div class="nav-left">
@@ -51,90 +53,110 @@
         <div class="main-layout">
             <!-- SIDEBAR FILTROS -->
             <aside class="sidebar glass-panel">
-                <h3>Filtros</h3>
-                
+                <h3>Filtros Dinámicos</h3>
+                <p class="filter-instructions">Selecciona uno o más botones para filtrar los datos.</p>
+
                 <div class="filter-group">
                     <label>Año de la Ola</label>
-                    <select id="filter-anio">
-                        <option value="all">Todos los años</option>
-                        <option value="2024">2024</option>
-                        <option value="2023">2023</option>
-                        <option value="2022">2022</option>
-                    </select>
+                    <div class="filter-buttons" id="filter-anio"></div>
                 </div>
 
                 <div class="filter-group">
                     <label>Género</label>
-                    <select id="filter-genero">
-                        <option value="all">Todos</option>
-                    </select>
+                    <div class="filter-buttons" id="filter-genero"></div>
                 </div>
 
                 <div class="filter-group">
                     <label>Rango de Edad</label>
-                    <select id="filter-edad">
-                        <option value="all">Todas las edades</option>
-                    </select>
+                    <div class="filter-buttons" id="filter-edad"></div>
                 </div>
 
                 <div class="filter-group">
                     <label>Nivel Socioeconómico (NSE)</label>
-                    <select id="filter-nse">
-                        <option value="all">Todos los NSE</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label>Sector de Impacto</label>
-                    <select id="filter-sector">
-                        <option value="all">Todos los sectores</option>
-                    </select>
+                    <div class="filter-buttons" id="filter-nse"></div>
                 </div>
 
                 <div class="filter-group">
                     <label>Comunidad</label>
-                    <select id="filter-comunidad">
-                        <option value="all">Todas las comunidades</option>
-                    </select>
+                    <div class="filter-buttons" id="filter-comunidad"></div>
                 </div>
-                
-                <button id="btn-reset" class="btn-outline">Limpiar Filtros</button>
+
+                <button id="btn-reset" class="btn-outline">Restablecer Todos</button>
             </aside>
 
-            <!-- ZONA DE GRAFICOS -->
+            <!-- ZONA DE PESTAÑAS Y GRAFICOS -->
             <main class="dashboard-content">
-                
-                <!-- Fila 1 -->
-                <div class="charts-row">
-                    <div class="chart-container glass-panel">
-                        <h3>Aspectos Positivos de la Comunidad</h3>
-                        <div class="canvas-wrapper">
-                            <canvas id="chartPositivos"></canvas>
+
+                <!-- TABS NAV -->
+                <div class="tabs-nav">
+                    <button class="tab-btn active" data-tab="tab-comunidad">Módulo 1: Comunidad</button>
+                    <button class="tab-btn" data-tab="tab-paracel">Módulo 2: Fábrica y Comunicación</button>
+                    <button class="tab-btn" data-tab="tab-perfil">Módulo 3: Perfil Demográfico</button>
+                </div>
+
+                <!-- TAB 1: COMUNIDAD -->
+                <div class="tab-content active" id="tab-comunidad">
+                    <h2 class="tab-title">Percepción de la Comunidad</h2>
+                    <div class="charts-row">
+                        <div class="chart-container glass-panel">
+                            <h3>Aspectos Positivos de la Comunidad</h3>
+                            <div class="canvas-wrapper"><canvas id="chartPositivos"></canvas></div>
                         </div>
                     </div>
-                    <div class="chart-container glass-panel">
-                        <h3>Problemas / Aspectos Negativos</h3>
-                        <div class="canvas-wrapper">
-                            <canvas id="chartNegativos"></canvas>
+                    <div class="charts-row">
+                        <div class="chart-container glass-panel">
+                            <h3>Problemas / Aspectos Negativos</h3>
+                            <div class="canvas-wrapper"><canvas id="chartNegativos"></canvas></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Fila 2 -->
-                <div class="charts-row">
-                    <div class="chart-container glass-panel">
-                        <h3>Expectativas sobre la Fábrica Paracel</h3>
-                        <div class="canvas-wrapper">
-                            <canvas id="chartExpectativas"></canvas>
+                <!-- TAB 2: PARACEL Y COMUNICACION -->
+                <div class="tab-content" id="tab-paracel" style="display: none;">
+                    <h2 class="tab-title">Percepción sobre Paracel</h2>
+                    <div class="charts-row">
+                        <div class="chart-container glass-panel">
+                            <h3>Expectativas Positivas sobre la Fábrica</h3>
+                            <div class="canvas-wrapper"><canvas id="chartExpectativas"></canvas></div>
+                        </div>
+                        <div class="chart-container glass-panel">
+                            <h3>Temores / Preocupaciones sobre la Fábrica</h3>
+                            <div class="canvas-wrapper"><canvas id="chartTemores"></canvas></div>
                         </div>
                     </div>
-                    <div class="chart-container glass-panel">
-                        <h3>Recepción de Información (Medios)</h3>
-                        <div class="canvas-wrapper">
-                            <canvas id="chartMedios"></canvas>
+                    <div class="charts-row">
+                        <div class="chart-container glass-panel">
+                            <h3>Recepción de Información (Medios)</h3>
+                            <div class="canvas-wrapper"><canvas id="chartMedios"></canvas></div>
                         </div>
                     </div>
                 </div>
+
+                <!-- TAB 3: PERFIL DEMOGRAFICO -->
+                <div class="tab-content" id="tab-perfil" style="display: none;">
+                    <h2 class="tab-title">Perfil Sociodemográfico</h2>
+
+                    <div class="charts-row">
+                        <div class="chart-container glass-panel">
+                            <h3>Nivel de Estudios</h3>
+                            <div class="canvas-wrapper" style="min-height: 350px;"><canvas id="chartEstudios"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container glass-panel">
+                            <h3>Situación Laboral</h3>
+                            <div class="canvas-wrapper" style="min-height: 350px;"><canvas id="chartTrabajo"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-row">
+                        <div class="chart-container glass-panel">
+                            <h3>Ingresos Familiares</h3>
+                            <div class="canvas-wrapper"><canvas id="chartIngresos"></canvas></div>
+                        </div>
+                    </div>
+
+                </div> <!-- Fin Tab 3 -->
 
             </main>
         </div>
@@ -143,4 +165,5 @@
     <!-- JS -->
     <script src="script.js"></script>
 </body>
+
 </html>

@@ -2,42 +2,47 @@
 let currentData = [];
 let charts = {};
 
+// ESTADOS DE FILTROS (Múltiples selecciones permitidas por categoría)
+let activeFilters = {
+    'año': new Set(),
+    'género': new Set(),
+    'edad': new Set(),
+    'nse': new Set(),
+    'comunidad': new Set()
+};
+
 // CONFIGURACIÓN CHART.JS GLOBALES
 Chart.defaults.color = '#8b949e';
 Chart.defaults.font.family = "'Inter', sans-serif";
 Chart.register(ChartDataLabels);
 
-// ARRAYS DE VARIABLES A GRAFICAR
-const configAspectosPositivos = ['tranquilidad', 'seguridad', 'la gente', 'oferta laboral', 'desarrollo del sector comercial y servicios'];
-const configAspectosNegativos = ['inseguridad', 'consumo de drogas', 'poca oferta laboral'];
+// ARRAYS DE VARIABLES A GRAFICAR (Conteo de presencias en strings)
+const configAspectosPositivos = ['tranquilidad', 'seguridad', 'la gente', 'oferta laboral', 'desarrollo del sector comercial y servicios', 'ambiente paisaje'];
+const configAspectosNegativos = ['inseguridad', 'consumo de drogas', 'poca oferta laboral', 'venta de drogas', 'violencia'];
 const configExpectativas = ['más puestos de trabajo para personas de la zona', 'mejoras o nuevos caminos o rutas en zonas aledañas', 'nuevos comercios alrededor de la planta', 'formación laboral profesional de personas'];
-const configMedios = ['radio', 'tv', 'redes sociales', 'medios de prensa', 'amigos conocidos'];
+const configMedios = ['radio', 'tv', 'redes sociales', 'medios de prensa', 'amigos conocidos', 'colaboradores de paracel que visitaron tu comunidad'];
+const configOcupacion = ['no trabaja actualmente', 'funcionario público', 'empleado a tiempo completo', 'trabajador independiente', 'trabajador por jornal a destajo', 'propietario patrón', 'estudiante'];
+
+// COLUMNAS DIRECTAS PARA AGRUPAR (Pie/Bar normal por categorías únicas)
+const colTemores = 'un temor';
+const colEstudios = 'podría indicarnos cuál es su nivel de estudios';
+const colIngresos = 'podría indicarnos en qué rango se encuentra sus ingresos económicos familiaresesto quiere decir la suma de lo que ganan todas las personas que trabajan en la casa';
 
 // INICIALIZACIÓN
 document.addEventListener("DOMContentLoaded", () => {
-    // Referencias DOM
+
+    // LOGIN STATE
     const btnLogin = document.getElementById('btn-login');
-    const btnLogout = document.getElementById('btn-logout');
-    const loginError = document.getElementById('login-error');
     const inputUser = document.getElementById('username');
     const inputPass = document.getElementById('password');
+    const loginError = document.getElementById('login-error');
 
-    const filterAnio = document.getElementById('filter-anio');
-    const filterGenero = document.getElementById('filter-genero');
-    const filterEdad = document.getElementById('filter-edad');
-    const filterNse = document.getElementById('filter-nse');
-    const filterSector = document.getElementById('filter-sector');
-    const filterComunidad = document.getElementById('filter-comunidad');
-    const btnReset = document.getElementById('btn-reset');
-
-    // CHEQUEAR SESIÓN AL CARGAR
     if (localStorage.getItem("paracel_logged") === "true") {
         showDashboard();
     } else {
         inputUser.focus();
     }
 
-    // EVENTOS DE LOGIN
     btnLogin.addEventListener('click', () => {
         if (inputUser.value === "user" && inputPass.value === "123") {
             localStorage.setItem("paracel_logged", "true");
@@ -48,24 +53,36 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    inputPass.addEventListener("keypress", function (event) {
-        if (event.key === "Enter") btnLogin.click();
+    inputPass.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") btnLogin.click();
     });
 
-    btnLogout.addEventListener('click', () => {
+    document.getElementById('btn-logout').addEventListener('click', () => {
         localStorage.removeItem("paracel_logged");
         location.reload();
     });
 
-    // EVENTOS DE FILTROS
-    const allFilters = [filterAnio, filterGenero, filterEdad, filterNse, filterSector, filterComunidad];
-    allFilters.forEach(f => {
-        f.addEventListener('change', updateDashboard);
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        activeFilters = { 'año': new Set(), 'género': new Set(), 'edad': new Set(), 'nse': new Set(), 'comunidad': new Set() };
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        updateDashboard();
     });
 
-    btnReset.addEventListener('click', () => {
-        allFilters.forEach(f => f.value = 'all');
-        updateDashboard();
+    // SISTEMA DE TABS (PESTAÑAS)
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remover active de todos
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.style.display = 'none');
+
+            // Activar el elegido
+            btn.classList.add('active');
+            const targetId = btn.getAttribute('data-tab');
+            document.getElementById(targetId).style.display = 'flex';
+        });
     });
 
     // FUNCIONES PRINCIPALES
@@ -73,118 +90,162 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('login-screen').style.display = "none";
         document.getElementById('dashboard-screen').style.display = "flex";
 
-        // Inicializar filtros con los datos crudos (encuestasData de data.js)
-        populateFilter(filterGenero, 'género');
-        populateFilter(filterEdad, 'edad');
-        populateFilter(filterNse, 'nse');
-        populateFilter(filterSector, 'sector');
-        populateFilter(filterComunidad, 'comunidad');
+        // Crear botones de filtros
+        createFilterButtons('filter-anio', 'año');
+        createFilterButtons('filter-genero', 'género');
+        createFilterButtons('filter-edad', 'edad');
+        createFilterButtons('filter-nse', 'nse');
+        createFilterButtons('filter-comunidad', 'comunidad');
 
-        // Primer render
+        // Primer render general
         updateDashboard();
     }
 
-    // EXTRAE VALORES UNICOS PARA LLENAR LOS SELECTS
-    function populateFilter(selectElement, colName) {
+    function createFilterButtons(containerId, colName) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = ''; // limpiar
+
+        // Extraer valores únicos válidos
         const uniqueValues = [...new Set(encuestasData.map(d => d[colName]))]
-            .filter(v => v !== null && v !== undefined && v !== "" && v !== "Ninguno/a")
+            .filter(v => v !== null && v !== undefined && v !== "" && String(v).toLowerCase() !== "nan" && String(v).toLowerCase() !== "ninguno/a")
             .sort();
 
         uniqueValues.forEach(val => {
-            let option = document.createElement("option");
-            option.value = val;
-            option.text = String(val).charAt(0).toUpperCase() + String(val).slice(1);
-            selectElement.appendChild(option);
+            const btn = document.createElement("button");
+            btn.className = "filter-btn";
+            btn.dataset.col = colName;
+            btn.dataset.val = String(val);
+            btn.innerText = String(val).charAt(0).toUpperCase() + String(val).slice(1);
+
+            // Evento click (Toggle / Multiple)
+            btn.addEventListener('click', () => {
+                if (activeFilters[colName].has(String(val))) {
+                    activeFilters[colName].delete(String(val));
+                    btn.classList.remove('active');
+                } else {
+                    activeFilters[colName].add(String(val));
+                    btn.classList.add('active');
+                }
+                updateDashboard();
+            });
+
+            container.appendChild(btn);
         });
     }
 
-    // FILTRADO DINÁMICO CADA VEZ QUE CAMBIA UN SELECT
+    // APLICAR FILTROS Y RECOMPUTAR GRAFICOS
     function updateDashboard() {
         let filtered = encuestasData;
 
-        // Recuperar valores del DOM
-        const valAnio = filterAnio.value;
-        const valGenero = filterGenero.value;
-        const valEdad = filterEdad.value;
-        const valNse = filterNse.value;
-        const valSector = filterSector.value;
-        const valComunidad = filterComunidad.value;
+        // Comprobar cada dimensión si tiene algún filtro activo (OR dentro de la dimensión, AND entre dimensiones)
+        for (const [colName, selectedSet] of Object.entries(activeFilters)) {
+            if (selectedSet.size > 0) {
+                filtered = filtered.filter(d => selectedSet.has(String(d[colName])));
+            }
+        }
 
-        // Filtrar paso a paso
-        if (valAnio !== 'all') filtered = filtered.filter(d => String(d['año']) === valAnio);
-        if (valGenero !== 'all') filtered = filtered.filter(d => String(d['género']) === valGenero);
-        if (valEdad !== 'all') filtered = filtered.filter(d => String(d['edad']) === valEdad);
-        if (valNse !== 'all') filtered = filtered.filter(d => String(d['nse']) === valNse);
-        if (valSector !== 'all') filtered = filtered.filter(d => String(d['sector']) === valSector);
-        if (valComunidad !== 'all') filtered = filtered.filter(d => String(d['comunidad']) === valComunidad);
-
-        // Guardar para gráficos globales
         currentData = filtered;
-
-        // Actualizar contador superior
         document.getElementById('total-encuestas').innerText = `Total Encuestas: ${currentData.length}`;
 
-        // Redibujar cuadros
-        renderChart('chartPositivos', 'bar', 'Aspectos Positivos (%)', configAspectosPositivos);
-        renderChart('chartNegativos', 'bar', 'Principales Problemas (%)', configAspectosNegativos);
-        renderChart('chartExpectativas', 'bar', 'Expectativas Positivas (%)', configExpectativas);
-        renderChart('chartMedios', 'line', 'Medios de Info. (%)', configMedios); // Line para variar
+        // RENDER MODULE 1
+        renderMultiColumnChart('chartPositivos', 'bar', 'Aspectos Positivos (%)', configAspectosPositivos);
+        renderMultiColumnChart('chartNegativos', 'bar', 'Problemas / Negativos (%)', configAspectosNegativos);
+
+        // RENDER MODULE 2
+        renderMultiColumnChart('chartExpectativas', 'bar', 'Expectativas (%)', configExpectativas);
+        renderMultiColumnChart('chartMedios', 'line', 'Medios de Info. (%)', configMedios);
+        renderSingleColumnChart('chartTemores', 'pie', colTemores);
+
+        // RENDER MODULE 3
+        renderSingleColumnChart('chartEstudios', 'bar', colEstudios);
+        renderSingleColumnChart('chartIngresos', 'bar', colIngresos);
+        renderMultiColumnChart('chartTrabajo', 'bar', 'Situación Laboral (%)', configOcupacion);
     }
 
-    // FUNCIÓN PARA RENDERIZAR CUALQUIER GRAFICO DE BARRAS U OTROS
-    function renderChart(canvasId, type, label, keysToCount) {
-        const ctx = document.getElementById(canvasId).getContext('2d');
+    // ----------------------------------------------------
+    // HELPERS DE GRAFICACIÓN CHART.JS
+    // ----------------------------------------------------
 
-        // Destruir instancia previa si existe para evitar overlaying
-        if (charts[canvasId]) {
-            charts[canvasId].destroy();
-        }
+    // Para contar presencias ("Sí") cruzando múltiples columnas booleanas encubiertas
+    function renderMultiColumnChart(canvasId, type, label, keysToCount) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (charts[canvasId]) charts[canvasId].destroy();
 
         let labels = [];
         let dataPoints = [];
         const total = currentData.length;
 
         keysToCount.forEach(key => {
-            // Contar cuantas encuestas tienen seleccionado 'key'
-            // Ojo: en data.js, lo que marcaban aparecia como string del mismo nombre u otros valores.
-            // Para ser robustos, si 'not null' y es string, lo contamos
             let count = currentData.filter(d => {
                 let v = d[key];
                 if (v === null || v === undefined) return false;
                 if (typeof v === 'number' && isNaN(v)) return false;
-
                 let strV = String(v).trim().toLowerCase();
-                if (strV === "" || strV === "-" || strV === "nan" || strV === "ninguno" || strV === "ninguna" || strV === "ninguno/a") return false;
-
+                if (strV === "" || strV === "-" || strV === "nan" || strV === "ninguno" || strV === "ninguna") return false;
                 return true;
             }).length;
 
             let pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-
-            // Recortar label para que no quede inmenso
-            let shortLabel = String(key).charAt(0).toUpperCase() + String(key).slice(1);
-            if (shortLabel.length > 25) {
-                shortLabel = shortLabel.substring(0, 25) + '...';
-            }
-
-            labels.push(shortLabel);
+            labels.push(truncate(key));
             dataPoints.push(pct);
         });
 
-        // Colores combinados cyan-blue neon
-        const clr1 = 'rgba(88, 166, 255, 0.7)';
-        const clr2 = 'rgba(88, 166, 255, 1)';
+        drawChart(ctx, canvasId, type, label, labels, dataPoints, true);
+    }
+
+    // Para agrupar las respuestas de una Sola columna categórica clásica
+    function renderSingleColumnChart(canvasId, type, colName) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (charts[canvasId]) charts[canvasId].destroy();
+
+        // Agrupar
+        let counts = {};
+        const total = currentData.length;
+
+        currentData.forEach(d => {
+            let v = d[colName];
+            if (v === null || v === undefined) return;
+            if (typeof v === 'number' && isNaN(v)) return;
+            let strV = String(v).trim();
+            if (strV.toLowerCase() === "nan" || strV === "" || strV === "-") return;
+
+            counts[strV] = (counts[strV] || 0) + 1;
+        });
+
+        // Ordenar de mayor a menor y convertir a porcentajes
+        let sortedKeys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+
+        let labels = [];
+        let dataPoints = [];
+
+        sortedKeys.forEach(k => {
+            labels.push(truncate(k));
+            dataPoints.push(((counts[k] / total) * 100).toFixed(1));
+        });
+
+        drawChart(ctx, canvasId, type, "Distribución (%)", labels, dataPoints, type !== 'pie');
+    }
+
+    // Motor de pintado genérico
+    function drawChart(ctx, canvasId, type, defaultLabel, labels, dataPoints, isPercentage) {
+
+        // Paleta de colores para Pie charts
+        const bgColors = type === 'pie' ?
+            ['#58a6ff', '#3182ce', '#1f6feb', '#238636', '#da3633', '#8957e5', '#d29922', '#3c3e42'] :
+            (type === 'line' ? 'rgba(88, 166, 255, 0.1)' : 'rgba(88, 166, 255, 0.7)');
+
+        const borderColors = type === 'pie' ? '#0d1117' : '#58a6ff';
 
         charts[canvasId] = new Chart(ctx, {
-            type: type, // 'bar', 'line', 'pie', etc
+            type: type,
             data: {
                 labels: labels,
                 datasets: [{
-                    label: label,
+                    label: defaultLabel,
                     data: dataPoints,
-                    backgroundColor: type === 'line' ? 'rgba(88, 166, 255, 0.1)' : clr1,
-                    borderColor: clr2,
-                    borderWidth: 2,
+                    backgroundColor: bgColors,
+                    borderColor: borderColors,
+                    borderWidth: type === 'pie' ? 2 : 1,
                     fill: type === 'line',
                     tension: 0.3
                 }]
@@ -192,32 +253,36 @@ document.addEventListener("DOMContentLoaded", () => {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                indexAxis: (canvasId === 'chartEstudios' || canvasId === 'chartIngresos' || canvasId === 'chartTrabajo') ? 'y' : 'x', // Barras horizontales para perfiles largos
                 plugins: {
-                    legend: {
-                        display: false
-                    },
+                    legend: { display: type === 'pie', position: 'right', labels: { color: '#f0f6fc', font: { size: 11 } } },
                     datalabels: {
-                        color: '#fff',
-                        anchor: 'end',
-                        align: type === 'line' ? 'top' : 'end',
-                        formatter: function (value) {
-                            return value > 0 ? value + '%' : '';
-                        },
+                        color: type === 'pie' ? '#fff' : '#f0f6fc',
+                        anchor: type === 'pie' ? 'center' : 'end',
+                        align: type === 'pie' ? 'center' : (type === 'line' ? 'top' : 'end'),
+                        formatter: function (value) { return value > 0 ? value + '%' : ''; },
                         font: { weight: 'bold', size: 10 }
                     }
                 },
-                scales: type === 'bar' ? {
+                scales: (type === 'bar' || type === 'line') ? {
                     y: {
                         beginAtZero: true,
-                        max: Math.min(100, Math.max(...dataPoints, 10) + 10), // Dar 10% de margen arriba
-                        grid: { color: 'rgba(255,255,255,0.05)' }
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#8b949e', font: { size: 11 } }
                     },
                     x: {
-                        grid: { display: false }
+                        grid: { display: false },
+                        ticks: { color: '#8b949e', font: { size: 11 } }
                     }
                 } : {}
             }
         });
+    }
+
+    function truncate(str) {
+        let s = String(str).charAt(0).toUpperCase() + String(str).slice(1);
+        if (s.length > 30) return s.substring(0, 30) + '...';
+        return s;
     }
 
 });
