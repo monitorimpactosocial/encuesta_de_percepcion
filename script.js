@@ -108,8 +108,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Pre-procesar columna de percepcion
         encuestasData.forEach(d => {
-            let negResp = String(d['no vio algun aspecto positivo aun'] || '').trim().toLowerCase();
-            let isPositiva = !(negResp === 'no vio algun aspecto positivo aun' || negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true' || negResp === 'nan' || negResp === '');
+            let negResp = String(d['no vio algun algun aspecto positivo aun'] || d['no vio algun aspecto positivo aun'] || '').trim().toLowerCase();
+            let isPositiva = !(negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true');
 
             let probResp = String(d['un temor'] || '').trim().toLowerCase();
             let isNegativa = !isPositiva && (probResp !== '' && probResp !== 'nan' && probResp !== 'ninguno/a' && probResp !== 'false');
@@ -213,7 +213,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // Comprobar cada dimensión si tiene algún filtro activo (OR dentro de la dimensión, AND entre dimensiones)
         for (const [colName, selectedSet] of Object.entries(activeFilters)) {
             if (selectedSet.size > 0) {
-                filtered = filtered.filter(d => selectedSet.has(String(d[colName]).toLowerCase()));
+                // Validación Case Insensitive permitiendo match exacto con el Dataset o con el valor capitalizado del Boton
+                filtered = filtered.filter(d =>
+                    selectedSet.has(String(d[colName]).toLowerCase()) ||
+                    selectedSet.has(String(d[colName]))
+                );
             }
         }
 
@@ -259,10 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('kpi-total').innerText = data.length;
 
         // 2. Percepcion Positiva
-        let countPos = data.filter(d => {
-            let negResp = String(d['no vio algun aspecto positivo aun'] || '').trim().toLowerCase();
-            return !(negResp === 'no vio algun aspecto positivo aun' || negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true');
-        }).length;
+        let countPos = data.filter(d => d['percepción_clasificada'] === 'Positiva').length;
         document.getElementById('kpi-positiva').innerText = ((countPos / data.length) * 100).toFixed(1) + '%';
 
         // Helper buscar llaves flex (mayus/minus)
