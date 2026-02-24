@@ -159,6 +159,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Boton Exportar PNG
+    document.getElementById('btn-export').addEventListener('click', () => {
+        const activeTab = document.querySelector('.tab-content.active');
+        if (!activeTab) return;
+        const canvases = activeTab.querySelectorAll('canvas');
+        canvases.forEach((canvas, idx) => {
+            let link = document.createElement('a');
+            link.download = `grafico_paracel_${idx + 1}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    });
+
     // APLICAR FILTROS Y RECOMPUTAR GRAFICOS
     function updateDashboard() {
         let filtered = encuestasData;
@@ -174,6 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('total-encuestas').innerText = `Total Encuestas: ${currentData.length}`;
 
         // RENDER MODULE 1
+        renderKPIs(currentData);
         renderMultiColumnChart('chartPositivos', 'bar', 'Aspectos Positivos (%)', configAspectosPositivos);
         renderMultiColumnChart('chartNegativos', 'bar', 'Problemas / Negativos (%)', configAspectosNegativos);
 
@@ -189,11 +203,67 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // RENDER MODULE 4 (EVOLUCION CLAVE 2022-2025)
         renderEvolPositiva();
-        renderMultiColumnChart('chartEvolFaltaLaboral', 'bar', 'Falta Oferta Laboral (%)', ['Poca oferta laboral']);
-        renderMultiColumnChart('chartEvolAtributos', 'bar', 'Atributos (%)', ['Tranquilidad', 'La gente']);
+        renderMultiColumnChart('chartEvolFaltaLaboral', 'bar', 'Falta Oferta Laboral (%)', ['poca oferta laboral']);
+        renderMultiColumnChart('chartEvolAtributos', 'bar', 'Atributos (%)', ['tranquilidad', 'la gente']);
         renderEvolProduccion();
-        renderMultiColumnChart('chartEvolBeneficios', 'line', 'Beneficios (%)', ['Mas puestos de trabajo para personas de la zona', 'Mejoras o nuevos caminos o rutas en zonas aledaas']);
+        renderMultiColumnChart('chartEvolBeneficios', 'line', 'Beneficios (%)', ['puestos de trabajo para', 'caminos o rutas en zonas']);
         renderMultiColumnChart('chartEvolCanales', 'bar', 'Canales (%)', configMedios);
+    }
+
+    // DINAMICA DE KPIS HEADER
+    function renderKPIs(data) {
+        if (!data || data.length === 0) {
+            document.getElementById('kpi-total').innerText = '0';
+            document.getElementById('kpi-positiva').innerText = '0%';
+            document.getElementById('kpi-problema').innerText = '-';
+            document.getElementById('kpi-atributo').innerText = '-';
+            return;
+        }
+
+        // 1. Total Encuestas
+        document.getElementById('kpi-total').innerText = data.length;
+
+        // 2. Percepcion Positiva
+        let countPos = data.filter(d => {
+            let negResp = String(d['no vio algun aspecto positivo aun'] || '').trim().toLowerCase();
+            return !(negResp === 'no vio algun aspecto positivo aun' || negResp === 'no vi algún aspecto positivo aún' || negResp === 'true');
+        }).length;
+        document.getElementById('kpi-positiva').innerText = ((countPos / data.length) * 100).toFixed(1) + '%';
+
+        // Helper buscar llaves flex (mayus/minus)
+        function getFuzzyKey(obj, substring) {
+            return Object.keys(obj).find(k => k.toLowerCase().includes(substring.toLowerCase())) || substring;
+        }
+
+        // 3. Top Problema
+        let problemas = {};
+        data.forEach(d => {
+            configAspectosNegativos.forEach(p => {
+                let actual = getFuzzyKey(d, p);
+                let v = d[actual];
+                let strV = String(v).trim().toLowerCase();
+                if (strV !== "undefined" && strV !== "null" && strV !== "" && strV !== "ninguno" && strV !== "nan" && strV !== "false" && strV !== "-") {
+                    problemas[p] = (problemas[p] || 0) + 1;
+                }
+            });
+        });
+        let topProblema = Object.keys(problemas).sort((a, b) => problemas[b] - problemas[a])[0];
+        document.getElementById('kpi-problema').innerText = topProblema ? truncate(topProblema, 25) : 'N/A';
+
+        // 4. Top Atributo
+        let atributos = {};
+        data.forEach(d => {
+            configAspectosPositivos.forEach(a => {
+                let actual = getFuzzyKey(d, a);
+                let v = d[actual];
+                let strV = String(v).trim().toLowerCase();
+                if (strV !== "undefined" && strV !== "null" && strV !== "" && strV !== "ninguno" && strV !== "nan" && strV !== "false" && strV !== "-") {
+                    atributos[a] = (atributos[a] || 0) + 1;
+                }
+            });
+        });
+        let topAtributo = Object.keys(atributos).sort((a, b) => atributos[b] - atributos[a])[0];
+        document.getElementById('kpi-atributo').innerText = topAtributo ? truncate(topAtributo, 25) : 'N/A';
     }
 
     // Para contar presencias ("Sí") cruzando múltiples columnas
@@ -214,11 +284,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const total = yearData.length;
             let dataPoints = [];
 
-            keysToCount.forEach(key => {
+            keysToCount.forEach(keySubstring => {
+                // Fuzzy Key Finder para sortear encondings raros
+                let actualKey = Object.keys(currentData[0] || {}).find(k => k.toLowerCase().includes(keySubstring.toLowerCase())) || keySubstring;
+
                 let count = yearData.filter(d => {
-                    let v = d[key];
+                    let v = d[actualKey];
                     if (v === null || v === undefined) return false;
-                    // Ya NO filtramos con isNaN genérico porque 'v' puede ser texto como "Oferta laboral"
                     let strV = String(v).trim().toLowerCase();
                     if (strV === "" || strV === "-" || strV === "nan" || strV === "ninguno" || strV === "ninguna") return false;
                     return true;
