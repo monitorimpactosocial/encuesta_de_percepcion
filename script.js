@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById('btn-reset').addEventListener('click', () => {
-        activeFilters = { 'es_panel': new Set(), 'año': new Set(), 'género': new Set(), 'edad': new Set(), 'nse': new Set(), 'comunidad': new Set() };
+        activeFilters = { 'es_panel': new Set(), 'percepción_clasificada': new Set(), 'año': new Set(), 'género': new Set(), 'edad': new Set(), 'nse': new Set(), 'comunidad': new Set() };
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
         updateDashboard();
     });
@@ -453,9 +453,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const total = yearData.length;
 
             // Calculamos gente que reporto algun aspecto positivo (no marco "No vio algun aspecto positivo aun")
+            let posKey = Object.keys(yearData[0] || {}).find(k => k.toLowerCase().includes('positivo'));
+
             let countPositive = yearData.filter(d => {
-                let negResp = String(d['no vio algun aspecto positivo aun']).trim().toLowerCase();
-                return !(negResp === 'no vio algun aspecto positivo aun' || negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true');
+                let negResp = String(posKey ? d[posKey] : '').trim().toLowerCase();
+                return !(negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true');
             }).length;
 
             let pct = total > 0 ? ((countPositive / total) * 100).toFixed(1) : 0;

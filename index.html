@@ -360,7 +360,7 @@
                     <div class="glass-panel" style="overflow-x: auto; max-height: 60vh; padding: 0;">
                         <table class="data-table" id="main-data-table"
                             style="width: 100%; border-collapse: collapse; text-align: left;">
-                            <thead style="background: var(--surface-bg); position: sticky; top: 0; z-index: 10;">
+                            <thead style="background: var(--surface-solid); position: sticky; top: 0; z-index: 10;">
                                 <tr id="table-head-row"></tr>
                             </thead>
                             <tbody id="table-body"></tbody>
@@ -368,29 +368,76 @@
                     </div>
                 </div>
 
-                <!-- TAB 6: METODOLOGÍA -->
-                <div class="tab-content" id="tab-metodologia">
-                    <h2 class="tab-title">Metodología y Alcance</h2>
-                    <div class="glass-panel" style="line-height: 1.6; color: var(--text-sec);">
-                        <h3 style="color: var(--text); margin-top:0;">Objetivo del Tablero</h3>
-                        <p>Este Dashboard interactivo consolida los resultados del programa de Monitoreo de Percepción
-                            Social de Paracel abarcando los años 2022, 2023, 2024 y 2025.</p>
+                <div class="tab-content" id="tab-metodologia" style="display: none;">
+                    <h2 class="tab-title">Metodología y Alcance del Monitoreo</h2>
+                    <div class="glass-panel"
+                        style="line-height: 1.6; color: var(--text-sec); overflow-y: auto; max-height: 60vh;">
+                        <h3 style="color: var(--text); margin-top:0;">Objetivo General del Tablero</h3>
+                        <p>Este Dashboard interactivo consolida de forma exhaustiva los resultados cuantitativos y
+                            cualitativos del <strong>Programa de Monitoreo de Percepción Social de Paracel</strong>,
+                            abarcando las líneas de base y actualizaciones anuales correspondientes a los años 2022,
+                            2023, 2024 y 2025. Su propósito principal es dotar a los equipos de gestión de una
+                            herramienta de inteligencia de datos (Business Intelligence) capaz de cruzar variables
+                            sociodemográficas con atributos de favorabilidad, expectativas y temores comunitarios en
+                            tiempo real.</p>
 
-                        <h3 style="color: var(--text);">Procesamiento de Datos</h3>
-                        <p>Los datos primarios provienen de encuestas en terreno estructuradas por cuestionarios
-                            transversales. Para el presente tablero, se unificaron variables demográficas (NSE,
-                            Comunidad, Edad, Género) y preguntas de percepción abierta, estandarizando problemáticas y
-                            beneficios mediante limpieza algorítmica.</p>
-                        <ul>
-                            <li><strong>Encuestas Efectivas (N):</strong> Representa el conteo absoluto de registros
-                                válidos filtrados sobre el universo total de la muestra histórica.</li>
-                            <li><strong>Panel / Recurrencia:</strong> Identifica individuos contactados en más de un año
-                                consecutivo mediante cruce difuso de sus números de teléfono y nombres de pila,
-                                permitiendo detectar tendencias longitudinales puras.</li>
-                            <li><strong>Imputación de Variables Faltantes:</strong> Las celdas nulas en variables
-                                críticas como el "Género" en bases de datos antiguas fueron reparadas cruzando
-                                diccionarios de onomástica latina y terminaciones heurísticas contra los Nombres
-                                propios.</li>
+                        <h3 style="color: var(--text); margin-top:20px;">1. Captura y Origen de los Datos</h3>
+                        <p>Los datos primarios son recopilados mediante encuestas estructuradas ejecutadas directamente
+                            en terreno (cara a cara) dentro del Área de Influencia Directa (AID) e Indirecta (AII) del
+                            proyecto Paracel, en la región de Concepción y áreas aledañas. Los cuestionarios
+                            transversales incluyen interrogantes cerradas (selección múltiple) y abiertas (respuestas
+                            espontáneas), lo que requiere de un agresivo proceso de post-codificación.</p>
+
+                        <h3 style="color: var(--text); margin-top:20px;">2. Procesamiento y Limpieza Textual (ETL)</h3>
+                        <p>Para construir el presente tablero y garantizar la interoperabilidad de bases de datos
+                            provenientes de distintos años y encuestadores, se aplicaron técnicas avanzadas de
+                            <em>Extract, Transform, Load (ETL)</em> a través de algoritmos desarrollados en Python:</p>
+                        <ul style="padding-left: 20px;">
+                            <li style="margin-bottom: 8px;"><strong>Normalización Ortográfica y Geográfica:</strong> Los
+                                nombres de comunidades (por ejemplo, "Zanja Cué" vs "sanja cue") y de barrios fueron
+                                estandarizados numéricamente aplicando emparejamiento difuso (<em>Fuzzy String
+                                    Matching</em>).</li>
+                            <li style="margin-bottom: 8px;"><strong>Estandarización de Edades y Rangos:</strong> Las
+                                entradas crudas de edad en formatos numéricos absolutos (ej. "42") e intermedios fueron
+                                recodificadas algorítmicamente en grandes estratos generacionales (ej. "40 a 49 años")
+                                para facilitar su visualización estadística limpia en pirámides y gráficos de barras
+                                consolidados.</li>
+                            <li style="margin-bottom: 8px;"><strong>Recodificación Heurística de Respuestas
+                                    Abiertas:</strong> Miles de comentarios en texto libre de distintas fuentes ("Falta
+                                Trabajo", "Temor a que no contraten") frente a preguntas centrales fueron tokenizados y
+                                agrupados bajo macro-categorías predefinidas (ej. "Inseguridad", "Contaminación",
+                                "Tranquilidad", etc.).</li>
+                            <li style="margin-bottom: 8px;"><strong>Imputación de Variables Faltantes (Género):</strong>
+                                En años donde ciertos campos sociodemográficos (como el Género) presentaban altos
+                                índices de omisión humana, se desarrolló una librería de procesamiento onomástico capaz
+                                de asignar probabilísticamente el sexo biológico cruzando terminaciones nominales y
+                                diccionarios de nombres propios en español contra los nombres de pila tabulados.</li>
+                        </ul>
+
+                        <h3 style="color: var(--text); margin-top:20px;">3. Definición de Términos, Filtros y KPIs</h3>
+                        <p>A continuación se expanden los conceptos estandarizados del panel de control transversal:</p>
+                        <ul style="padding-left: 20px;">
+                            <li style="margin-bottom: 8px;"><strong>Encuestas Efectivas (N):</strong> Indicador de
+                                cabecera que representa el conteo absoluto de registros 100% válidos y procesados que
+                                restan tras haber aplicado cualquier cruce de intersección (filtros) en la barra
+                                lateral. Equivale al tamaño de la muestra observable vigente.</li>
+                            <li style="margin-bottom: 8px;"><strong>Tipo de Muestra - Panel / Recurrencia:</strong>
+                                Metodología de muestreo longitudinal. La etiqueta "ES_PANEL = Sí" en la base de datos
+                                identifica a aquellos individuos particulares que han sido recurrentemente contactados y
+                                encuestados en más de un año consecutivo. Esta identificación técnica se logró
+                                programáticamente contrastando números de teléfono telefónicos, nombres purificados y
+                                rangos de edad con métricas de similitud para trazar el mismo ente a lo largo del
+                                tiempo.</li>
+                            <li style="margin-bottom: 8px;"><strong>Percepción Clasificada (Positiva, Negativa,
+                                    Neutra):</strong> Motor de inferencia del Tablero. Se atribuye a cada fila en
+                                función a un árbol de decisiones con exclusión lógica: si un encuestado afirmó "No ver
+                                ningún aspecto positivo", es denegado o neutralizado. Si por el contrario la respuesta a
+                                la pregunta "¿Cuáles son los aspectos positivos que vio?" goza de un registro válido
+                                asertivo, es catalogado como dueño de una "Percepción Positiva".</li>
+                            <li style="margin-bottom: 8px;"><strong>Nivel Socioeconómico (NSE):</strong> Modelo
+                                predictivo que subdivide a los encuestados en estratos principales consolidados de
+                                consumo y riqueza reportada (Alto/MedioAlto, Medio/MedioBajo y Bajo/MuyBajo) en base a
+                                sus ingresos familiares declarados en guaraníes.</li>
                         </ul>
                     </div>
                 </div>
@@ -400,7 +447,7 @@
     </div>
 
     <!-- JS -->
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
 </body>
 
 </html>
