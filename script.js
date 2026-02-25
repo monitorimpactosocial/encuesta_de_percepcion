@@ -28,8 +28,8 @@ const configOcupacion = ['no trabaja actualmente', 'funcionario público', 'empl
 
 // COLUMNAS DIRECTAS PARA AGRUPAR (Pie/Bar normal por categorías únicas)
 const colTemores = 'un temor';
-const colEstudios = 'podria indicarnos cual es su nivel de estudios';
-const colIngresos = 'podria indicarnos en que rango se encuentra sus ingresos economicos familiaresesto quiere decir la suma de lo que ganan todas las personas que trabajan en la casa';
+const colEstudios = 'podría indicarnos cuál es su nivel de estudios';
+const colIngresos = 'podría indicarnos en qué rango se encuentra sus ingresos económicos familiaresesto quiere decir la suma de lo que ganan todas las personas que trabajan en la casa';
 
 // CONSTANTES Y COLORES DE GRÁFICOS
 const yearColors = {
@@ -392,19 +392,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         years.forEach(year => {
             let yearData = currentData.filter(d => String(d['año']) === year);
-            const total = yearData.length;
 
             let counts = {};
+            let validTotal = 0;
             yearData.forEach(d => {
-                let strV = String(d[colName]).trim();
+                let v = d[colName];
+                if (v === null || v === undefined) return;
+                let strV = String(v).trim();
+                if (strV.toLowerCase() === "nan" || strV === "" || strV === "-") return;
                 counts[strV] = (counts[strV] || 0) + 1;
+                validTotal += 1;
             });
 
-            let dataPoints = [];
-            validAnswersArray.forEach(ans => {
+            const total = validTotal > 0 ? validTotal : 1; // Prevenir div por 0
+
+            let dataPoints = validAnswersArray.map(ans => {
                 let count = counts[ans] || 0;
-                let pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                dataPoints.push(pct);
+                return ((count / total) * 100).toFixed(1);
             });
 
             let colorObj = yearColors[year] || defaultColor;
