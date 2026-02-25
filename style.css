@@ -603,23 +603,24 @@ aside h3 {
 
 /* Charts grid más estable */
 .charts-row {
-  display: flex;
+  display: flex !important;
+  flex-direction: column !important;
+  /* Apilamiento estricto inquebrantable */
+  flex-wrap: nowrap !important;
+  /* Prohibido crear columnas adyacentes */
   gap: var(--s-32);
-  /* Aumentamos el gap considerablemente para evitar choque */
-  align-items: stretch;
-  min-height: 0;
-  flex-wrap: wrap;
   margin-bottom: var(--s-32);
-  /* Separar verticalmente cada bloque */
-  flex-direction: column;
-  /* Apilamiento estricto: evita comprimir gráficos horizontalmente */
+  width: 100% !important;
+  /* Ocupar todo el ancho de la pestaña */
+  max-width: 100% !important;
 }
 
 /* Card de gráfico */
 .chart-container {
-  flex: 1 1 100%;
-  /* Forzamos a que ocupen todo el ancho si quisieran convivir con más elementos */
-  width: 100%;
+  flex: none !important;
+  /* Evitar que flexbox distorsione la caja */
+  width: 100% !important;
+  max-width: 100% !important;
   display: flex;
   flex-direction: column;
   background: var(--surface-solid);

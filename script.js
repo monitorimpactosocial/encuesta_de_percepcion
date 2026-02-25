@@ -537,11 +537,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         color: type === 'pie' ? '#fff' : rawColor,
                         anchor: type === 'pie' ? 'center' : 'end',
                         align: type === 'pie' ? 'center' : (type === 'line' ? 'top' : 'end'),
+                        rotation: type === 'bar' ? -90 : 0, // <-- Gira las etiquetas verticales para salvar el ancho
                         formatter: function (value) { return value > 0 ? value + '%' : ''; },
                         font: { weight: 'bold', size: 10, family: "'Inter', sans-serif" },
                         display: function (context) {
                             let val = context.dataset.data[context.dataIndex];
-                            return val >= 3.0; // Ocultar labels < 3% para evitar solapamientos en barras minúsculas
+                            return val >= 4.0; // Subimos el umbral ligeramente para limpiar gráficos multianuales 
                         }
                     }
                 },
