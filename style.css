@@ -611,12 +611,15 @@ aside h3 {
   flex-wrap: wrap;
   margin-bottom: var(--s-32);
   /* Separar verticalmente cada bloque */
+  flex-direction: column;
+  /* Apilamiento estricto: evita comprimir gráficos horizontalmente */
 }
 
 /* Card de gráfico */
 .chart-container {
-  flex: 1 1 300px;
-  min-width: 0;
+  flex: 1 1 100%;
+  /* Forzamos a que ocupen todo el ancho si quisieran convivir con más elementos */
+  width: 100%;
   display: flex;
   flex-direction: column;
   background: var(--surface-solid);
