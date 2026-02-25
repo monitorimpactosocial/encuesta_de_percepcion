@@ -409,7 +409,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const pieBgColors = ['#00f0ff', '#ff007f', '#90ff00', '#ffea00', '#9d00ff', '#ff5e00', '#00ff73', '#00b8ff'];
 
             datasets.push({
-                label: `Distribución - ${year}`,
+                label: `${year}`, // Optimización UX: Sólo mostrar el año, la figura ya es autodescriptiva
                 data: dataPoints,
                 backgroundColor: type === 'pie' ? pieBgColors : colorObj.bg,
                 borderColor: type === 'pie' ? '#0d1117' : colorObj.border,
@@ -527,7 +527,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     legend: {
                         display: true, // Mostrar leyenda siempre para identificar los años
                         position: 'top',
-                        labels: { color: rawColor, font: { size: 11, family: "'Inter', sans-serif" } }
+                        labels: {
+                            color: rawColor,
+                            font: { size: 11, family: "'Inter', sans-serif" },
+                            padding: 20 // Espacio enorme entre los ítem de la leyenda y su caja delimitadora
+                        }
                     },
                     datalabels: {
                         color: type === 'pie' ? '#fff' : rawColor,
@@ -551,7 +555,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         grid: { display: false },
                         ticks: { color: labelColor, font: { size: 11 } }
                     }
-                } : {}
+                } : {},
+                layout: {
+                    padding: { top: 10, bottom: 20, left: 10, right: 10 } // Cinturón de seguridad perimetral dentro del Canvas
+                }
             }
         });
     }

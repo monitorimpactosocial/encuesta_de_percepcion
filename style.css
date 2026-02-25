@@ -604,10 +604,13 @@ aside h3 {
 /* Charts grid más estable */
 .charts-row {
   display: flex;
-  gap: var(--s-20);
+  gap: var(--s-32);
+  /* Aumentamos el gap considerablemente para evitar choque */
   align-items: stretch;
   min-height: 0;
   flex-wrap: wrap;
+  margin-bottom: var(--s-32);
+  /* Separar verticalmente cada bloque */
 }
 
 /* Card de gráfico */
@@ -622,10 +625,12 @@ aside h3 {
   padding: var(--s-20);
   box-shadow: var(--shadow-xs);
   transition: box-shadow 0.15s ease, transform 0.15s ease;
-  overflow: hidden;
-  /* <--- CLAVE PARA EVITAR SOLAPE HTML */
-  contain: content;
-  /* <--- AISLANTE DE RENDERIZADO BROWSER */
+  overflow: hidden !important;
+  /* <--- Candado absoluto para evitar derrames de labels de Chart.js! */
+  contain: strict;
+  /* <--- Previene todo escape visual al navegador */
+  min-height: 440px;
+  /* <--- Garantizamos espacio de sobra para el Canvas y sus X-axis Labels rotados */
 }
 
 .chart-container:hover {
@@ -644,12 +649,10 @@ aside h3 {
 
 .canvas-wrapper {
   position: relative;
-  height: 300px;
-  /* Explicit height is required for Chart.js to constrain itself vertically */
+  height: 380px;
+  /* Creció 80px para darle aire a las barras sin comprimir las leyendas */
   width: 99%;
-  /* 99% prevents horizontal infinity loop resizing in Flex childs */
   margin: 0 auto;
-  /* Center it */
 }
 
 /* El canvas interno respeta el relative parent */
