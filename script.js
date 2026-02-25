@@ -35,7 +35,8 @@ const colIngresos = 'podria indicarnos en que rango se encuentra sus ingresos ec
 const yearColors = {
     '2022': { bg: 'rgba(0, 240, 255, 0.75)', border: 'rgba(0, 240, 255, 1)' }, // Cyan Neon
     '2023': { bg: 'rgba(255, 0, 128, 0.75)', border: 'rgba(255, 0, 128, 1)' }, // Magenta Neon
-    '2024': { bg: 'rgba(144, 255, 0, 0.75)', border: 'rgba(144, 255, 0, 1)' }  // Lime Neon
+    '2024': { bg: 'rgba(144, 255, 0, 0.75)', border: 'rgba(144, 255, 0, 1)' }, // Lime Neon
+    '2025': { bg: 'rgba(255, 165, 0, 0.75)', border: 'rgba(255, 140, 0, 1)' }  // Orange Neon
 };
 const defaultColor = { bg: 'rgba(0, 240, 255, 0.75)', border: 'rgba(0, 240, 255, 1)' };
 
@@ -247,6 +248,9 @@ document.addEventListener("DOMContentLoaded", () => {
         renderEvolProduccion();
         renderMultiColumnChart('chartEvolBeneficios', 'line', 'Beneficios (%)', ['puestos de trabajo para', 'caminos o rutas en zonas']);
         renderMultiColumnChart('chartEvolCanales', 'bar', 'Canales (%)', configMedios);
+
+        // RENDER MODULE 5 (TABLA DE DATOS)
+        renderDataTable(currentData);
     }
 
     // DINAMICA DE KPIS HEADER
@@ -569,5 +573,91 @@ document.addEventListener("DOMContentLoaded", () => {
         if (s.length > 30) return s.substring(0, 30) + '...';
         return s;
     }
+
+    // --- TABLA DE DATOS INTERACTIVA ---
+    function renderDataTable(data) {
+        const thead = document.getElementById('table-head-row');
+        const tbody = document.getElementById('table-body');
+
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) return;
+
+        // Seleccionar columnas clave para no saturar el DOM (max 12)
+        const displayCols = ['año', 'id', 'género', 'edad', 'sector', 'comunidad', 'nse', 'es_panel', 'percepción_clasificada'];
+
+        // Cabeceras
+        displayCols.forEach(col => {
+            const th = document.createElement('th');
+            th.innerText = String(col).toUpperCase();
+            th.style.padding = '12px 15px';
+            th.style.borderBottom = '2px solid var(--border)';
+            th.style.color = 'var(--text)';
+            thead.appendChild(th);
+        });
+
+        // Filas (Limitado a 500 para rendimiento en Web, el export descarga todo)
+        const limit = Math.min(data.length, 500);
+        for (let i = 0; i < limit; i++) {
+            const row = data[i];
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid var(--glass-border)';
+
+            displayCols.forEach(col => {
+                const td = document.createElement('td');
+                let val = row[col];
+
+                // Fallback de codificación para género
+                if (col === 'género') {
+                    val = row['género'] || row['genero'] || row['sexo'];
+                }
+
+                td.innerText = val !== undefined && val !== null ? val : '-';
+                td.style.padding = '10px 15px';
+                td.style.color = 'var(--text-sec)';
+                td.style.fontSize = '13px';
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        }
+    }
+
+    // --- EXPORTAR CSV ---
+    document.getElementById('btn-export-csv').addEventListener('click', () => {
+        if (!currentData || currentData.length === 0) {
+            alert("No hay datos para exportar bajo los filtros actuales.");
+            return;
+        }
+
+        // Exportamos todas las columnas del primer objeto para el archivo CSV real
+        const allKeys = Object.keys(currentData[0]);
+        let csvContent = "";
+
+        // Cabecera CSV
+        csvContent += allKeys.join(";") + "\r\n";
+
+        // Data CSV
+        currentData.forEach(row => {
+            let rowArray = allKeys.map(k => {
+                let val = row[k] !== null && row[k] !== undefined ? String(row[k]) : "";
+                val = val.replace(/"/g, '""'); // Escape comillas
+                if (val.includes(';') || val.includes('\n')) {
+                    val = `"${val}"`;
+                }
+                return val;
+            });
+            csvContent += rowArray.join(";") + "\r\n";
+        });
+
+        const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Data_Percepcion_Paracel_${new Date().getTime()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
 
 });

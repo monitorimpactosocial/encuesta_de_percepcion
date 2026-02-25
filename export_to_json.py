@@ -14,8 +14,12 @@ df = pd.read_excel(file_bases)
 df.replace('-', np.nan, inplace=True)
 year_col = [c for c in df.columns if 'año' in c.lower() or 'ano' in c.lower()]
 if year_col:
-    # Convert FLOAT years like 2025.0 -> '2025' reliably
-    df[year_col[0]] = df[year_col[0]].apply(lambda x: str(int(x)) if pd.notnull(x) and str(x).strip() != '' and str(x).lower() != 'nan' else np.nan)
+    def safe_cast_year(x):
+        try:
+            return str(int(float(x)))
+        except (ValueError, TypeError):
+            return np.nan
+    df[year_col[0]] = df[year_col[0]].apply(safe_cast_year)
 
 # Limpiar fechas NaT y NaN a cadenas vacías o string antes de to_dict
 for col in df.columns:
@@ -31,7 +35,7 @@ import re
 df['es_panel'] = "No" # Default value
 
 # Buscar inteligentemente las columnas de nombre y celular sin importar variaciones de nombre
-name_cols = [c for c in df.columns if 'nombre' in c.lower() and 'encuestado' in c.lower()]
+name_cols = [c for c in df.columns if 'nombre' in c.lower() or 'apellido' in c.lower()]
 phone_cols = [c for c in df.columns if 'telfono' in c.lower() or 'teléfono' in c.lower() or 'telefono' in c.lower()]
 year_col = [c for c in df.columns if 'año' in c.lower() or 'ano' in c.lower()]
 

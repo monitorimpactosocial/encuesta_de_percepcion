@@ -13,7 +13,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 <!-- Data -->
-<script src="data.js"></script>
+<script src="data.js?v=5"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 </head>
 
 <body>
@@ -152,6 +153,8 @@
                     <button class="tab-btn" data-tab="tab-perfil">3. Perfil Demográfico</button>
                     <button class="tab-btn" data-tab="tab-evolucion"
                         style="color:var(--orange-accent); font-weight:800;">4. Evolución Clave (2022-2025)</button>
+                    <button class="tab-btn" data-tab="tab-datos">5. Base de Datos</button>
+                    <button class="tab-btn" data-tab="tab-metodologia">6. Metodología</button>
                 </div>
 
                 <!-- TAB 1: COMUNIDAD -->
@@ -345,6 +348,51 @@
                         </div>
                     </div>
                 </div> <!-- Fin Tab 4 -->
+
+                <!-- TAB 5: BASE DE DATOS -->
+                <div class="tab-content" id="tab-datos">
+                    <h2 class="tab-title" style="display:flex; justify-content:space-between; align-items:center;">
+                        Base de Datos Interactiva
+                        <button id="btn-export-csv" class="btn-outline"
+                            style="font-size:12px; padding:6px 12px; margin:0; cursor:pointer;">⬇ Exportar CSV</button>
+                    </h2>
+                    <div class="glass-panel" style="overflow-x: auto; max-height: 60vh; padding: 0;">
+                        <table class="data-table" id="main-data-table"
+                            style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead style="background: var(--surface-bg); position: sticky; top: 0; z-index: 10;">
+                                <tr id="table-head-row"></tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 6: METODOLOGÍA -->
+                <div class="tab-content" id="tab-metodologia">
+                    <h2 class="tab-title">Metodología y Alcance</h2>
+                    <div class="glass-panel" style="line-height: 1.6; color: var(--text-sec);">
+                        <h3 style="color: var(--text); margin-top:0;">Objetivo del Tablero</h3>
+                        <p>Este Dashboard interactivo consolida los resultados del programa de Monitoreo de Percepción
+                            Social de Paracel abarcando los años 2022, 2023, 2024 y 2025.</p>
+
+                        <h3 style="color: var(--text);">Procesamiento de Datos</h3>
+                        <p>Los datos primarios provienen de encuestas en terreno estructuradas por cuestionarios
+                            transversales. Para el presente tablero, se unificaron variables demográficas (NSE,
+                            Comunidad, Edad, Género) y preguntas de percepción abierta, estandarizando problemáticas y
+                            beneficios mediante limpieza algorítmica.</p>
+                        <ul>
+                            <li><strong>Encuestas Efectivas (N):</strong> Representa el conteo absoluto de registros
+                                válidos filtrados sobre el universo total de la muestra histórica.</li>
+                            <li><strong>Panel / Recurrencia:</strong> Identifica individuos contactados en más de un año
+                                consecutivo mediante cruce difuso de sus números de teléfono y nombres de pila,
+                                permitiendo detectar tendencias longitudinales puras.</li>
+                            <li><strong>Imputación de Variables Faltantes:</strong> Las celdas nulas en variables
+                                críticas como el "Género" en bases de datos antiguas fueron reparadas cruzando
+                                diccionarios de onomástica latina y terminaciones heurísticas contra los Nombres
+                                propios.</li>
+                        </ul>
+                    </div>
+                </div>
 
             </main>
         </div>
