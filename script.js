@@ -109,11 +109,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Pre-procesar columna de percepcion
         encuestasData.forEach(d => {
-            let negResp = String(d['no vio algun algun aspecto positivo aun'] || d['no vio algun aspecto positivo aun'] || '').trim().toLowerCase();
+            let keys = Object.keys(d);
+            let posKey = keys.find(k => k.toLowerCase().includes('positivo'));
+            let negKey = keys.find(k => k.toLowerCase().includes('temor'));
+
+            let negResp = String(posKey ? d[posKey] : '').trim().toLowerCase();
+            // Si "no vi algun aspecto..." está vacío/nulo, significa que SÍ ve aspectos positivos.
             let isPositiva = !(negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true');
 
-            let probResp = String(d['un temor'] || '').trim().toLowerCase();
-            let isNegativa = !isPositiva && (probResp !== '' && probResp !== 'nan' && probResp !== 'ninguno/a' && probResp !== 'false');
+            // Si dijo algo negativo en "positivas" o es neutro, revisamos "temores"
+            let probResp = String(negKey ? d[negKey] : '').trim().toLowerCase();
+            let isNegativa = !isPositiva && (probResp !== '' && probResp !== 'nan' && probResp !== 'ninguno' && probResp !== 'ninguna' && !probResp.includes('ns') && !probResp.includes('nr') && probResp !== 'false');
 
             if (isPositiva) d['percepción_clasificada'] = 'Positiva';
             else if (isNegativa) d['percepción_clasificada'] = 'Negativa';
