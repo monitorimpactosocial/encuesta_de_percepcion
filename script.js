@@ -3,6 +3,8 @@ let currentData = [];
 let charts = {};
 let leafletMap = null; // Instancia global del mapa de Leaflet
 let mapLayers = {}; // Capas del mapa
+let dynamicLayers = []; // Capas sujetas a repintado de mapa de calor
+let mapLegend = null; // Control de leyenda del mapa
 
 // ESTADOS DE FILTROS (Múltiples selecciones permitidas por categoría)
 let activeFilters = {
@@ -263,6 +265,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // RENDER MODULE 5 (TABLA DE DATOS)
         renderDataTable(currentData);
+
+        // RENDER MODULE 6 (MAPA GIS)
+        if (leafletMap) {
+            updateMapColors();
+        }
     }
 
     // DINAMICA DE KPIS HEADER
@@ -730,76 +737,120 @@ document.addEventListener("DOMContentLoaded", () => {
         let basemaps = { "Satélite (Esri)": satelliteLayer, "Calles Oscuro (CartoDB)": darkLayer };
         let overlays = {};
 
+        dynamicLayers = []; // Reset capas dinamicas
+
         // Validamos existencia de mapasData inyectado por script externo
         if (typeof mapasData !== 'undefined') {
 
             // 1. Distritos (Paracel)
             if (mapasData['distritos_paracel']) {
-                mapLayers['Distritos'] = L.geoJSON(mapasData['distritos_paracel'], {
+                let layer = L.geoJSON(mapasData['distritos_paracel'], {
                     style: styleDistritos,
-                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Distrito:</b> ${feature.properties.DISTRITO || 'N/A'} <br/> <b>Depto:</b> ${feature.properties.DPTO || 'N/A'}`); }
+                    onEachFeature: function (feature, layer) {
+                        let txt = `<b>Distrito:</b> ${feature.properties.DISTRITO || feature.properties.DIST_DESC_ || 'N/A'}`;
+                        layer.options.originalPopupText = txt;
+                        layer.bindPopup(txt);
+                    }
                 }).addTo(leafletMap);
-                overlays['Límites Distritales'] = mapLayers['Distritos'];
+                mapLayers['Distritos'] = layer;
+                overlays['Límites Distritales'] = layer;
+                dynamicLayers.push({ layer: layer, defaultColor: '#ffffff' });
             }
 
             // 2. Propiedades Forestales
             if (mapasData['propiedades_forestales']) {
-                mapLayers['Forestales'] = L.geoJSON(mapasData['propiedades_forestales'], {
+                let layer = L.geoJSON(mapasData['propiedades_forestales'], {
                     style: stylePropiedades,
-                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Estancia (Forestal):</b> ${feature.properties.NOM_EST || 'N/A'} <br/> <b>Área:</b> ${feature.properties.AREA_HA || 'N/A'} Ha`); }
+                    onEachFeature: function (feature, layer) {
+                        let txt = `<b>Estancia:</b> ${feature.properties.Estancia || 'N/A'} <br/> <b>Área:</b> ${feature.properties.Area || 'N/A'} Ha`;
+                        layer.options.originalPopupText = txt;
+                        layer.bindPopup(txt);
+                    }
                 }).addTo(leafletMap);
-                overlays['Núcleos Forestales PARACEL'] = mapLayers['Forestales'];
+                mapLayers['Forestales'] = layer;
+                overlays['Núcleos Forestales PARACEL'] = layer;
             }
 
             // 3. Componentes Industriales
             if (mapasData['componentes_industriales']) {
-                mapLayers['Industria'] = L.geoJSON(mapasData['componentes_industriales'], {
+                let layer = L.geoJSON(mapasData['componentes_industriales'], {
                     style: { color: "#ffea00", weight: 3, fillColor: "#ffea00", fillOpacity: 0.6 },
-                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Instalación:</b> ${feature.properties.Name || 'Componente Industrial'}`); }
+                    onEachFeature: function (feature, layer) {
+                        let txt = `<b>Instalación:</b> ${feature.properties.proyecto || feature.properties.Name || 'Componente Industrial'}`;
+                        layer.options.originalPopupText = txt;
+                        layer.bindPopup(txt);
+                    }
                 }).addTo(leafletMap);
-                overlays['Planta Industrial y Puertos'] = mapLayers['Industria'];
+                mapLayers['Industria'] = layer;
+                overlays['Planta Industrial y Puertos'] = layer;
             }
 
             // 4. Comunidades Indígenas
             if (mapasData['comunidades_indigenas']) {
-                mapLayers['Indigenas'] = L.geoJSON(mapasData['comunidades_indigenas'], {
+                let layer = L.geoJSON(mapasData['comunidades_indigenas'], {
                     style: styleIndigenas,
-                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Comunidad Indígena:</b> ${feature.properties.Comunidad || feature.properties.COMUNIDAD || 'N/A'}`); }
+                    onEachFeature: function (feature, layer) {
+                        let txt = `<b>Comunidad Indígena:</b> ${feature.properties.COM_DESC || feature.properties.BARLO_DESC || 'N/A'}`;
+                        layer.options.originalPopupText = txt;
+                        layer.bindPopup(txt);
+                    }
                 }).addTo(leafletMap);
-                overlays['Comunidades Indígenas'] = mapLayers['Indigenas'];
+                mapLayers['Indigenas'] = layer;
+                overlays['Comunidades Indígenas'] = layer;
+                dynamicLayers.push({ layer: layer, defaultColor: '#ff007f' });
             }
 
             // 5. Comunidades Rurales (Industrial + Forestal)
             let comunidadesLayer = L.layerGroup().addTo(leafletMap);
             if (mapasData['comunidades_industriales']) {
-                L.geoJSON(mapasData['comunidades_industriales'], {
+                let indLayer = L.geoJSON(mapasData['comunidades_industriales'], {
                     style: styleComunidades,
-                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Comunidad (Z. Industrial):</b> ${feature.properties.Comunidad || feature.properties.COMUNIDAD || 'N/A'}`); }
+                    onEachFeature: function (feature, layer) {
+                        let txt = `<b>Comunidad (Z. Ind.):</b> ${feature.properties.Localidade || 'N/A'}`;
+                        layer.options.originalPopupText = txt;
+                        layer.bindPopup(txt);
+                    }
                 }).addTo(comunidadesLayer);
+                dynamicLayers.push({ layer: indLayer, defaultColor: '#00f0ff' });
             }
             if (mapasData['comunidades_forestales']) {
-                L.geoJSON(mapasData['comunidades_forestales'], {
+                let forLayer = L.geoJSON(mapasData['comunidades_forestales'], {
                     style: styleComunidades,
-                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Comunidad (Z. Forestal):</b> ${feature.properties.Comunidad || feature.properties.COMUNIDAD || 'N/A'}`); }
+                    onEachFeature: function (feature, layer) {
+                        let txt = `<b>Comunidad (Z. For.):</b> ${feature.properties.Localidad || 'N/A'}`;
+                        layer.options.originalPopupText = txt;
+                        layer.bindPopup(txt);
+                    }
                 }).addTo(comunidadesLayer);
+                dynamicLayers.push({ layer: forLayer, defaultColor: '#00f0ff' });
             }
-            overlays['Comunidades de Influencia Formate'] = comunidadesLayer;
+            overlays['Comunidades de Influencia Formal'] = comunidadesLayer;
 
             // 6. Barrios Concepción y Amambay
-            let barriosLayer = L.layerGroup(); // No añadir por defecto para no ensuciar
+            let barriosLayer = L.layerGroup();
             if (mapasData['barrios_concepcion']) {
-                L.geoJSON(mapasData['barrios_concepcion'], {
+                let layerC = L.geoJSON(mapasData['barrios_concepcion'], {
                     style: { color: "#ffffff", weight: 0.5, fillColor: "#ffffff", fillOpacity: 0.1 },
-                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Barrio (Concepción):</b> ${feature.properties.BARRIO || feature.properties.BarLoc || 'N/A'}`); }
+                    onEachFeature: function (feature, layer) {
+                        let txt = `<b>Barrio (Concepción):</b> ${feature.properties.BAR_LOC || 'N/A'}`;
+                        layer.options.originalPopupText = txt;
+                        layer.bindPopup(txt);
+                    }
                 }).addTo(barriosLayer);
+                dynamicLayers.push({ layer: layerC, defaultColor: '#ffffff' });
             }
             if (mapasData['barrios_amambay']) {
-                L.geoJSON(mapasData['barrios_amambay'], {
+                let layerA = L.geoJSON(mapasData['barrios_amambay'], {
                     style: { color: "#ffffff", weight: 0.5, fillColor: "#ffffff", fillOpacity: 0.1 },
-                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Barrio (Amambay):</b> ${feature.properties.BARRIO || feature.properties.BarLoc || 'N/A'}`); }
+                    onEachFeature: function (feature, layer) {
+                        let txt = `<b>Barrio (Amambay):</b> ${feature.properties.BAR_LOC || 'N/A'}`;
+                        layer.options.originalPopupText = txt;
+                        layer.bindPopup(txt);
+                    }
                 }).addTo(barriosLayer);
+                dynamicLayers.push({ layer: layerA, defaultColor: '#ffffff' });
             }
-            overlays['Capa Urbana / Barrios Censtrales'] = barriosLayer;
+            overlays['Capa Urbana / Barrios Centrales'] = barriosLayer;
 
         } else {
             console.error("No se detectó la variable mapasData. Revisa si procesar_mapas.py corrió y si mapas_data.js está enlazado correctamente.");
@@ -808,6 +859,118 @@ document.addEventListener("DOMContentLoaded", () => {
         // Agregar control de capas a la vista TopRight
         L.control.layers(basemaps, overlays, { collapsed: false }).addTo(leafletMap);
         leafletMap.invalidateSize(); // Forzamos recuadro correcto
+
+        // Disparar coloración inicial
+        updateMapColors();
     }
 
+    // --- ALGORITMO CHOROPLETH DINÁMICO ---
+    function updateMapColors() {
+        if (!leafletMap || dynamicLayers.length === 0) return;
+
+        // 1. Calcular Percepción por Comunidad / Área
+        let stats = {};
+
+        currentData.forEach(d => {
+            let com = String(d['comunidad'] || d['distrito'] || d['barrio'] || '').trim().toLowerCase();
+            if (!com || com === 'nan' || com === '-') return;
+
+            if (!stats[com]) stats[com] = { total: 0, pos: 0 };
+            stats[com].total++;
+            if (d['percepción_clasificada'] === 'Positiva') {
+                stats[com].pos++;
+            }
+        });
+
+        // Convertir a porcentajes
+        let perceptMap = {};
+        for (let c in stats) {
+            perceptMap[c] = (stats[c].pos / stats[c].total) * 100;
+        }
+
+        // Helper para normalizar nombres y cruzar GIS con Excel (Fuzzy Matcher básico)
+        function normalizeName(name) {
+            if (!name) return "";
+            return String(name).toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita acentos
+                .replace(/[^a-z0-9]/g, ""); // quita espacios y caracteres raros
+        }
+
+        let perceptMapNorm = {};
+        for (let c in perceptMap) {
+            perceptMapNorm[normalizeName(c)] = perceptMap[c];
+        }
+
+        // 2. Colorear capas
+        function getColorForPct(pct) {
+            if (pct >= 60) return '#00ff73'; // Verde - Alta Aceptacion
+            if (pct >= 40) return '#ffea00'; // Amarillo - Neutra / Riesgo
+            return '#ff007f'; // Rojo - Tension / Negatividad
+        }
+
+        dynamicLayers.forEach(layerObj => {
+            layerObj.layer.eachLayer(function (featureLayer) {
+                let props = featureLayer.feature.properties;
+                let featureName = props.COM_DESC || props.BARLO_DESC || props.Localidad || props.Localidade || props.DISTRITO || props.DIST_DESC_ || props.BAR_LOC || props.Comunidad || "";
+
+                let normFeatureName = normalizeName(featureName);
+
+                let matchedPct = null;
+                // Match directo
+                if (perceptMapNorm[normFeatureName] !== undefined) {
+                    matchedPct = perceptMapNorm[normFeatureName];
+                } else {
+                    // Match parcial
+                    for (let k in perceptMapNorm) {
+                        if (normFeatureName.includes(k) || k.includes(normFeatureName)) {
+                            if (k !== "" && normFeatureName !== "") {
+                                matchedPct = perceptMapNorm[k];
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Aplicar estilo cruzado
+                if (matchedPct !== null) {
+                    let c = getColorForPct(matchedPct);
+                    featureLayer.setStyle({ fillColor: c, color: c, fillOpacity: 0.6, weight: 2 });
+                    let originalPopup = featureLayer.options.originalPopupText || `<b>Área:</b> ${featureName}`;
+                    featureLayer.bindPopup(`${originalPopup}<br><hr style="margin:5px 0; border:rgba(0,0,0,0.1)"><b style="color:${c}; font-size:14px;">Percepción Positiva: ${matchedPct.toFixed(1)}%</b>`);
+                } else {
+                    // Reset a color nativo o nulo
+                    let defaultColor = layerObj.defaultColor || '#ffffff';
+                    featureLayer.setStyle({ fillColor: defaultColor, color: defaultColor, fillOpacity: 0.1, weight: 1 });
+                    featureLayer.bindPopup(featureLayer.options.originalPopupText || `<b>Área:</b> ${featureName}`);
+                }
+            });
+        });
+
+        // 3. Actualizar Leyenda Flotante
+        if (mapLegend) {
+            leafletMap.removeControl(mapLegend);
+        }
+
+        mapLegend = L.control({ position: 'bottomleft' });
+        mapLegend.onAdd = function (map) {
+            let div = L.DomUtil.create('div', 'info legend');
+            div.style.background = 'var(--glass-bg)';
+            div.style.backdropFilter = 'blur(10px)';
+            div.style.padding = '12px 18px';
+            div.style.border = '1px solid var(--glass-border)';
+            div.style.borderRadius = '8px';
+            div.style.color = 'var(--text)';
+            div.style.fontSize = '12px';
+            div.style.lineHeight = '2';
+            div.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+
+            div.innerHTML += '<b style="font-size:14px">🗺️ Mapa de Calor (Percepción)</b><br>';
+            div.innerHTML += '<i style="background:#00ff73; width:12px; height:12px; display:inline-block; border-radius:50%; margin-right:8px; vertical-align:middle;"></i> Positiva (>60%)<br>';
+            div.innerHTML += '<i style="background:#ffea00; width:12px; height:12px; display:inline-block; border-radius:50%; margin-right:8px; vertical-align:middle;"></i> Neutra (40-60%)<br>';
+            div.innerHTML += '<i style="background:#ff007f; width:12px; height:12px; display:inline-block; border-radius:50%; margin-right:8px; vertical-align:middle;"></i> Negativa (<40%)<br>';
+            div.innerHTML += '<i style="background:#ffffff; opacity:0.3; border:1px solid #444; width:12px; height:12px; display:inline-block; border-radius:50%; margin-right:8px; vertical-align:middle;"></i> Sin datos suficientes';
+            return div;
+        };
+        mapLegend.addTo(leafletMap);
+    }
 });
