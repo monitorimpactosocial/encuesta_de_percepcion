@@ -343,13 +343,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 }).length;
 
                 let pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                dataPoints.push(pct);
+                dataPoints.push(Number(pct));
             });
 
             let colorObj = yearColors[year] || defaultColor;
 
             datasets.push({
-                label: `${year}`, // Optimización UX: Solo exponer el año, el título de la figura ya dice de qué trata
+                label: `${year}`,
                 data: dataPoints,
                 backgroundColor: type === 'line' ? colorObj.bg.replace('0.7', '0.1') : colorObj.bg,
                 borderColor: colorObj.border,
@@ -358,6 +358,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 tension: 0.3
             });
         });
+
+        // --- ORDENAR DE MAYOR A MENOR SEGÚN EL ÚLTIMO AÑO DISPONIBLE ---
+        if (type === 'bar' || type === 'horizontalBar' || type === 'pie') {
+            // Referencia al data array del último año (datasets[datasets.length - 1])
+            let refData = datasets[datasets.length - 1].data;
+
+            // Crear array de índices ordenados descendentemente por los valores de refData
+            let indices = Array.from(labels.keys()).sort((a, b) => refData[b] - refData[a]);
+
+            // Reordenar las labels
+            labels = indices.map(i => labels[i]);
+
+            // Reordenar data points en todos los datasets
+            datasets.forEach(ds => {
+                ds.data = indices.map(i => ds.data[i]);
+            });
+        }
 
         drawChart(ctx, canvasId, type, labels, datasets);
     }
@@ -558,7 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         font: { weight: 'bold', size: 10, family: "'Inter', sans-serif" },
                         display: function (context) {
                             let val = context.dataset.data[context.dataIndex];
-                            return val >= 4.0; // Subimos el umbral ligeramente para limpiar gráficos multianuales 
+                            return val >= 4.0;
                         }
                     }
                 },
@@ -566,15 +583,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     y: {
                         beginAtZero: true,
                         grid: { color: gridColor },
-                        ticks: { color: labelColor, font: { size: 11 } }
+                        ticks: { color: labelColor, font: { size: 12 } }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { color: labelColor, font: { size: 11 } }
+                        ticks: {
+                            color: labelColor,
+                            font: { size: 12 },
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
                     }
                 } : {},
                 layout: {
-                    padding: { top: 10, bottom: 20, left: 10, right: 10 } // Cinturón de seguridad perimetral dentro del Canvas
+                    padding: { top: 10, bottom: 20, left: 10, right: 10 }
                 }
             }
         });
