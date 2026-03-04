@@ -206,6 +206,22 @@ def normalizar_edad(v):
 if 'edad' in df_all.columns:
     df_all['edad'] = df_all['edad'].apply(normalizar_edad)
 
+# Normalizar NSE
+print("Estandarizando Nivel Socioeconómico (NSE)...")
+def armonizar_nse(v):
+    if pd.isna(v): return np.nan
+    v = str(v).lower().strip()
+    if 'alto' in v or 'c1' in v:
+        return 'Alto'
+    if 'medio' in v or 'c2' in v or 'c3' in v:
+        return 'Medio'
+    if 'bajo' in v or re.search(r'\b[de]\b', v):
+        return 'Bajo'
+    return 'NS/NR'
+
+if 'nse' in df_all.columns:
+    df_all['nse'] = df_all['nse'].apply(armonizar_nse)
+
 # Normalizar Estudios
 print("Estandarizando niveles de estudio...")
 def armonizar_estudios(v):
