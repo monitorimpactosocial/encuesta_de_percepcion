@@ -832,7 +832,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let layerC = L.geoJSON(mapasData['barrios_concepcion'], {
                     style: { color: "#ffffff", weight: 0.5, fillColor: "#ffffff", fillOpacity: 0.1 },
                     onEachFeature: function (feature, layer) {
-                        let txt = `<b>Barrio (Concepción):</b> ${feature.properties.BAR_LOC || 'N/A'}`;
+                        let txt = `<b>Barrio (Concepción):</b> ${feature.properties.BARLO_DESC || feature.properties.BARRIO || feature.properties.BAR_LOC || 'N/A'}`;
                         layer.options.originalPopupText = txt;
                         layer.bindPopup(txt);
                     }
@@ -843,7 +843,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let layerA = L.geoJSON(mapasData['barrios_amambay'], {
                     style: { color: "#ffffff", weight: 0.5, fillColor: "#ffffff", fillOpacity: 0.1 },
                     onEachFeature: function (feature, layer) {
-                        let txt = `<b>Barrio (Amambay):</b> ${feature.properties.BAR_LOC || 'N/A'}`;
+                        let txt = `<b>Barrio (Amambay):</b> ${feature.properties.BARLO_DESC || feature.properties.BARRIO || feature.properties.BAR_LOC || 'N/A'}`;
                         layer.options.originalPopupText = txt;
                         layer.bindPopup(txt);
                     }
