@@ -83,7 +83,11 @@ dict_rename = {
     'sí cuáles 1_1': 'sí cuáles',
     'edaad': 'edad',
     'sexo': 'género',
-    'nombre del encuestado': 'nombre'
+    'nombre del encuestado': 'nombre',
+    'podría indicarnos cuál es su nivel de estudios': 'estudios',
+    'nivel de estudios': 'estudios',
+    'estudios alcanzados': 'estudios',
+    'que nivel de estudio tiene': 'estudios'
 }
 
 list_dfs = []
@@ -202,6 +206,24 @@ def normalizar_edad(v):
 if 'edad' in df_all.columns:
     df_all['edad'] = df_all['edad'].apply(normalizar_edad)
 
+# Normalizar Estudios
+print("Estandarizando niveles de estudio...")
+def armonizar_estudios(v):
+    if pd.isna(v): return np.nan
+    v = str(v).lower().strip()
+    if any(x in v for x in ['univ', 'terciar', 'postgrado', 'doctor', 'master', 'profesorado']):
+        return 'Superior'
+    if any(x in v for x in ['bachiller', 'secundar', 'media', 'colegio']):
+        return 'Secundaria'
+    if any(x in v for x in ['primar', 'basica', 'escolar']):
+        return 'Primaria'
+    if any(x in v for x in ['ningun', 'sin estudio', 'no sabe']):
+        return 'Sin estudios / NS'
+    return 'Otro'
+
+if 'estudios' in df_all.columns:
+    df_all['estudios'] = df_all['estudios'].apply(armonizar_estudios)
+
 # --- CREACIÓN DE PERSONA ID Y RELLENO LONGITUDINAL ---
 print("Creando identificador de persona y aplicando imputación longitudinal...")
 if 'nombre' in df_all.columns:
@@ -210,7 +232,7 @@ else:
     df_all['persona_id'] = ["anonimo_" + str(np.random.randint(100000, 999999)) for _ in range(len(df_all))]
 
 df_all = df_all.sort_values(['persona_id', 'año'])
-for col in ['género', 'sector', 'comunidad', 'edad', 'nse']:
+for col in ['género', 'sector', 'comunidad', 'edad', 'nse', 'estudios']:
     if col in df_all.columns:
         mask = ~df_all['persona_id'].str.startswith('anonimo')
         df_all.loc[mask, col] = df_all.loc[mask].groupby('persona_id')[col].transform(lambda x: x.ffill().bfill())

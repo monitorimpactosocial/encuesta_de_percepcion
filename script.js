@@ -28,7 +28,7 @@ const configOcupacion = ['no trabaja actualmente', 'funcionario público', 'empl
 
 // COLUMNAS DIRECTAS PARA AGRUPAR (Pie/Bar normal por categorías únicas)
 const colTemores = 'un temor';
-const colEstudios = 'podría indicarnos cuál es su nivel de estudios';
+const colEstudios = 'estudios';
 const colIngresos = 'podría indicarnos en qué rango se encuentra sus ingresos económicos familiaresesto quiere decir la suma de lo que ganan todas las personas que trabajan en la casa';
 
 // CONSTANTES Y COLORES DE GRÁFICOS
