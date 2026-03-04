@@ -5,7 +5,7 @@ import shutil
 import tempfile
 import unicodedata
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 import numpy as np
 import pandas as pd
@@ -162,18 +162,19 @@ def normalizar_percepcion(x: Optional[str]) -> Optional[str]:
         "favor", "buena", "bien", "acepta", "aceptacion"
     ]
     negativos = [
-        "negativa", "negativo", "desaprobacion", "rechazo", "desfavorable",
-        "mala", "mal", "critica", "oposicion"
+        "nopositiva", "negativa", "negativo", "desaprobacion", "rechazo", "desfavorable",
+        "mala", "mal", "critica", "oposicion", "nopositivo"
     ]
     neutros = [
         "neutra", "neutro", "indiferente", "regular", "nsnr",
         "nosabe", "nosabe/noresponde", "noopina"
     ]
 
-    if any(t in s for t in positivos):
-        return "Positiva"
+    # Check negativos first to catch "nopositiva" before "positiva"
     if any(t in s for t in negativos):
         return "Negativa"
+    if any(t in s for t in positivos):
+        return "Positiva"
     if any(t in s for t in neutros):
         return "Neutra"
 
@@ -313,7 +314,7 @@ def metricas_calidad(df: pd.DataFrame) -> Dict[str, float]:
     return comp
 
 
-def construir_resumen_ejecutivo(df: pd.DataFrame) -> Dict[str, object]:
+def construir_resumen_ejecutivo(df: pd.DataFrame) -> Dict[str, Any]:
     anuales = construir_tabla_anual(df)
     calidad = metricas_calidad(df)
     comunidades = construir_tabla_comunidades(df, CFG.min_muestra_comunidad)
@@ -387,7 +388,7 @@ def configurar_estilo_graficos() -> None:
     })
 
 
-def crear_graficos(df: pd.DataFrame, resumen: Dict[str, object], out_dir: str) -> Dict[str, str]:
+def crear_graficos(df: pd.DataFrame, resumen: Dict[str, Any], out_dir: str) -> Dict[str, str]:
     configurar_estilo_graficos()
     ensure_dir(out_dir)
 
@@ -651,12 +652,15 @@ class ReporteIntegralPDF(FPDF):
 
         self.set_y(y0 + card_h + 4)
 
-    def insert_image(self, path: str, x: float = 12, w: float = 186, h: Optional[float] = None):
+    def insert_image(self, path: str, x: float = 12, w: float = 186, h_mm: float = 0):
         if path and os.path.exists(path):
-            self.image(path, x=x, y=self.get_y(), w=w, h=h if h else 0)
-            self.ln(3)
-            if h:
-                self.ln(h)
+            if h_mm > 0 and self.get_y() + h_mm > 270:
+                self.add_page()
+            self.image(path, x=x, y=self.get_y(), w=w, h=0)
+            if h_mm > 0:
+                self.ln(h_mm + 5)
+            else:
+                self.ln(3)
 
     def simple_table(self, df: pd.DataFrame, widths: List[float], headers: List[str], align: Optional[List[str]] = None):
         if df.empty:
@@ -856,13 +860,11 @@ def ensamblar_pdf(df: pd.DataFrame, resumen: Dict[str, object], graficos: Dict[s
         "El indicador principal utilizado es la proporcion de respuestas clasificadas como positivas sobre el total valido de percepciones de cada año."
     )
     if "tendencia" in graficos:
-        pdf.insert_image(graficos["tendencia"], x=12, w=186)
-        pdf.ln(60)
+        pdf.insert_image(graficos["tendencia"], x=12, w=186, h_mm=80)
 
     pdf.subsection_title("3.2 Composicion anual de respuestas")
     if "composicion" in graficos:
-        pdf.insert_image(graficos["composicion"], x=12, w=186)
-        pdf.ln(62)
+        pdf.insert_image(graficos["composicion"], x=12, w=186, h_mm=83)
 
     tabla_anual = dataframe_anual_reporte(resumen["anuales"])
     pdf.simple_table(
@@ -880,8 +882,7 @@ def ensamblar_pdf(df: pd.DataFrame, resumen: Dict[str, object], graficos: Dict[s
     )
 
     if "comunidades" in graficos:
-        pdf.insert_image(graficos["comunidades"], x=12, w=186)
-        pdf.ln(76)
+        pdf.insert_image(graficos["comunidades"], x=12, w=186, h_mm=105)
 
     tabla_com = dataframe_comunidades_reporte(resumen["comunidades"])
     pdf.simple_table(
@@ -900,18 +901,15 @@ def ensamblar_pdf(df: pd.DataFrame, resumen: Dict[str, object], graficos: Dict[s
 
     if "genero" in graficos:
         pdf.subsection_title("5.1 Genero")
-        pdf.insert_image(graficos["genero"], x=30, w=150)
-        pdf.ln(52)
+        pdf.insert_image(graficos["genero"], x=30, w=150, h_mm=83)
 
     if "nse" in graficos:
         pdf.subsection_title("5.2 Nivel socioeconomico")
-        pdf.insert_image(graficos["nse"], x=30, w=150)
-        pdf.ln(52)
+        pdf.insert_image(graficos["nse"], x=30, w=150, h_mm=83)
 
     if "estudios" in graficos:
         pdf.subsection_title("5.3 Nivel educativo")
-        pdf.insert_image(graficos["estudios"], x=20, w=170)
-        pdf.ln(58)
+        pdf.insert_image(graficos["estudios"], x=20, w=170, h_mm=90)
 
     # Conclusiones
     pdf.section_title("6. Conclusiones y recomendaciones tecnicas")
