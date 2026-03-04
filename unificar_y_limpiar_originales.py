@@ -252,6 +252,10 @@ for col in ['género', 'sector', 'comunidad', 'edad', 'nse', 'estudios']:
     if col in df_all.columns:
         mask = ~df_all['persona_id'].str.startswith('anonimo')
         df_all.loc[mask, col] = df_all.loc[mask].groupby('persona_id')[col].transform(lambda x: x.ffill().bfill())
+        
+    # Relleno final para quienes no pudieron ser imputados (ej. casos nuevos 2025)
+    if col in ['nse', 'estudios'] and col in df_all.columns:
+        df_all[col] = df_all[col].fillna('NS/NR')
 
 df_all = df_all.sort_values(['año']).reset_index(drop=True)
 
