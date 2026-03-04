@@ -14,7 +14,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 <!-- Data -->
 <script src="data.js?v=7"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="mapas_data.js"></script>
 </head>
 
 <body>
@@ -155,7 +157,23 @@
                     <button class="tab-btn" data-tab="tab-evolucion"
                         style="color:var(--orange-accent); font-weight:800;">4. Evolución Clave (2022-2025)</button>
                     <button class="tab-btn" data-tab="tab-datos">5. Base de Datos</button>
-                    <button class="tab-btn" data-tab="tab-metodologia">6. Metodología</button>
+                    <button class="tab-btn" data-tab="tab-mapas" style="color:#00a35c; font-weight:800;">6. Mapas
+                        GIS</button>
+                    <button class="tab-btn" data-tab="tab-metodologia">7. Metodología</button>
+                </div>
+
+                <!-- TAB MAPAS -->
+                <div class="tab-content" id="tab-mapas" style="display:none;">
+                    <div class="card glass-card" style="padding: 0;">
+                        <h2
+                            style="padding: 20px; border-bottom: 1px solid var(--glass-border); margin: 0; display:flex; justify-content:space-between; align-items:center;">
+                            Cartografía Relacional (Paracel)
+                            <span
+                                style="font-size:12px; font-weight:normal; background:var(--paracel-blue); color:white; padding:4px 8px; border-radius:4px;">QGIS/Leaflet</span>
+                        </h2>
+                        <div id="map-container"
+                            style="height: 65vh; width: 100%; z-index: 1; border-radius: 0 0 16px 16px;"></div>
+                    </div>
                 </div>
 
                 <!-- TAB 1: COMUNIDAD -->

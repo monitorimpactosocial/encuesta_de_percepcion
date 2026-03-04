@@ -1,6 +1,8 @@
 // ESTADO GLOBAL
 let currentData = [];
 let charts = {};
+let leafletMap = null; // Instancia global del mapa de Leaflet
+let mapLayers = {}; // Capas del mapa
 
 // ESTADOS DE FILTROS (Múltiples selecciones permitidas por categoría)
 let activeFilters = {
@@ -97,7 +99,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Redibujar gráficos para solucionar bug de canvas 0x0 en divs ocultos (Requerimos setTimeout para esperar el layout rendering nativo)
             setTimeout(() => {
-                updateDashboard();
+                if (targetId === 'tab-mapas') {
+                    initLeafletMap();
+                } else {
+                    updateDashboard();
+                }
             }, 50);
         });
     });
@@ -693,5 +699,115 @@ document.addEventListener("DOMContentLoaded", () => {
         link.click();
         document.body.removeChild(link);
     });
+
+    // --- MÓDULO GIS LEAFLET ---
+    function initLeafletMap() {
+        if (leafletMap) {
+            leafletMap.invalidateSize(); // Refresco si ya existe
+            return;
+        }
+
+        // Crear mapa base centrado en Concepcion
+        leafletMap = L.map('map-container').setView([-23.4, -57.4], 8);
+
+        // Capa satelital de fondo (Esri World Imagery)
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+        }).addTo(leafletMap);
+
+        // Capa callejera oscura de fondo (CartoDB DarkMatter)
+        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap & CartoDB'
+        });
+
+        // Estilos para GeoJSON
+        const stylePropiedades = { color: "#90ff00", weight: 2, fillColor: "#90ff00", fillOpacity: 0.2 }; // Lime
+        const styleIndigenas = { color: "#ff007f", weight: 2, fillColor: "#ff007f", fillOpacity: 0.4 };   // Magenta
+        const styleComunidades = { color: "#00f0ff", weight: 2, fillColor: "#00f0ff", fillOpacity: 0.3 }; // Cyan
+        const styleDistritos = { color: "#ffffff", weight: 1, fillOpacity: 0.05, dashArray: '5, 5' };     // Blanco DASH
+
+        mapLayers = {};
+        let basemaps = { "Satélite (Esri)": satelliteLayer, "Calles Oscuro (CartoDB)": darkLayer };
+        let overlays = {};
+
+        // Validamos existencia de mapasData inyectado por script externo
+        if (typeof mapasData !== 'undefined') {
+
+            // 1. Distritos (Paracel)
+            if (mapasData['distritos_paracel']) {
+                mapLayers['Distritos'] = L.geoJSON(mapasData['distritos_paracel'], {
+                    style: styleDistritos,
+                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Distrito:</b> ${feature.properties.DISTRITO || 'N/A'} <br/> <b>Depto:</b> ${feature.properties.DPTO || 'N/A'}`); }
+                }).addTo(leafletMap);
+                overlays['Límites Distritales'] = mapLayers['Distritos'];
+            }
+
+            // 2. Propiedades Forestales
+            if (mapasData['propiedades_forestales']) {
+                mapLayers['Forestales'] = L.geoJSON(mapasData['propiedades_forestales'], {
+                    style: stylePropiedades,
+                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Estancia (Forestal):</b> ${feature.properties.NOM_EST || 'N/A'} <br/> <b>Área:</b> ${feature.properties.AREA_HA || 'N/A'} Ha`); }
+                }).addTo(leafletMap);
+                overlays['Núcleos Forestales PARACEL'] = mapLayers['Forestales'];
+            }
+
+            // 3. Componentes Industriales
+            if (mapasData['componentes_industriales']) {
+                mapLayers['Industria'] = L.geoJSON(mapasData['componentes_industriales'], {
+                    style: { color: "#ffea00", weight: 3, fillColor: "#ffea00", fillOpacity: 0.6 },
+                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Instalación:</b> ${feature.properties.Name || 'Componente Industrial'}`); }
+                }).addTo(leafletMap);
+                overlays['Planta Industrial y Puertos'] = mapLayers['Industria'];
+            }
+
+            // 4. Comunidades Indígenas
+            if (mapasData['comunidades_indigenas']) {
+                mapLayers['Indigenas'] = L.geoJSON(mapasData['comunidades_indigenas'], {
+                    style: styleIndigenas,
+                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Comunidad Indígena:</b> ${feature.properties.Comunidad || feature.properties.COMUNIDAD || 'N/A'}`); }
+                }).addTo(leafletMap);
+                overlays['Comunidades Indígenas'] = mapLayers['Indigenas'];
+            }
+
+            // 5. Comunidades Rurales (Industrial + Forestal)
+            let comunidadesLayer = L.layerGroup().addTo(leafletMap);
+            if (mapasData['comunidades_industriales']) {
+                L.geoJSON(mapasData['comunidades_industriales'], {
+                    style: styleComunidades,
+                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Comunidad (Z. Industrial):</b> ${feature.properties.Comunidad || feature.properties.COMUNIDAD || 'N/A'}`); }
+                }).addTo(comunidadesLayer);
+            }
+            if (mapasData['comunidades_forestales']) {
+                L.geoJSON(mapasData['comunidades_forestales'], {
+                    style: styleComunidades,
+                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Comunidad (Z. Forestal):</b> ${feature.properties.Comunidad || feature.properties.COMUNIDAD || 'N/A'}`); }
+                }).addTo(comunidadesLayer);
+            }
+            overlays['Comunidades de Influencia Formate'] = comunidadesLayer;
+
+            // 6. Barrios Concepción y Amambay
+            let barriosLayer = L.layerGroup(); // No añadir por defecto para no ensuciar
+            if (mapasData['barrios_concepcion']) {
+                L.geoJSON(mapasData['barrios_concepcion'], {
+                    style: { color: "#ffffff", weight: 0.5, fillColor: "#ffffff", fillOpacity: 0.1 },
+                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Barrio (Concepción):</b> ${feature.properties.BARRIO || feature.properties.BarLoc || 'N/A'}`); }
+                }).addTo(barriosLayer);
+            }
+            if (mapasData['barrios_amambay']) {
+                L.geoJSON(mapasData['barrios_amambay'], {
+                    style: { color: "#ffffff", weight: 0.5, fillColor: "#ffffff", fillOpacity: 0.1 },
+                    onEachFeature: function (feature, layer) { layer.bindPopup(`<b>Barrio (Amambay):</b> ${feature.properties.BARRIO || feature.properties.BarLoc || 'N/A'}`); }
+                }).addTo(barriosLayer);
+            }
+            overlays['Capa Urbana / Barrios Censtrales'] = barriosLayer;
+
+        } else {
+            console.error("No se detectó la variable mapasData. Revisa si procesar_mapas.py corrió y si mapas_data.js está enlazado correctamente.");
+        }
+
+        // Agregar control de capas a la vista TopRight
+        L.control.layers(basemaps, overlays, { collapsed: false }).addTo(leafletMap);
+        leafletMap.invalidateSize(); // Forzamos recuadro correcto
+    }
 
 });
