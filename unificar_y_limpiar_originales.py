@@ -5,12 +5,7 @@ import re
 
 dir_path = r"C:\Users\DiegoMeza\OneDrive - PARACEL S.A\MONITOREO_IMPACTO_SOCIAL_PARACEL\NAUTA PERCEPCIÓN INFORMES\encuesta_percepcion_2026"
 
-files = {
-    '2022': os.path.join(dir_path, 'bases_originales', '2022_Tabulación_Paracel Línea de Base Percepción.xlsx'),
-    '2023': os.path.join(dir_path, 'bases_originales', '2023_Tabulación_Línea de Salida.xlsx'),
-    '2024': os.path.join(dir_path, 'bases_originales', '2024_Tabulación Quanti_Paracel.xlsx'),
-    '2025': os.path.join(dir_path, 'tabulacion_2025', 'Data', 'Desktop', '2025_Tabulación_Paracel_Percepción.xlsx')
-}
+file_bases_originales = os.path.join(dir_path, 'bases_2022al2025_originales.xlsx')
 
 output_file = os.path.join(dir_path, "BASE_CONSOLIDADA_SERIES_LIMPIA.xlsx")
 
@@ -36,6 +31,21 @@ def imputar_genero(nombre, genero_actual):
         return 'Hombre'
     
     return np.nan
+
+def normalizar_texto_simple(t):
+    if pd.isna(t): return ""
+    t = str(t).lower().strip()
+    t = re.sub(r'[áäâà]', 'a', t); t = re.sub(r'[éëêè]', 'e', t)
+    t = re.sub(r'[íïîì]', 'i', t); t = re.sub(r'[óöôò]', 'o', t)
+    t = re.sub(r'[úüûù]', 'u', t); t = re.sub(r'ñ', 'n', t)
+    return re.sub(r'[^a-z0-9 ]', '', t)
+
+def crear_persona_id(nombre):
+    cleaned = normalizar_texto_simple(nombre)
+    if cleaned != "" and cleaned != "nan":
+        return cleaned 
+    else:
+        return "anonimo_" + str(np.random.randint(100000, 999999))
 
 def clean_col_name(name):
     if pd.isna(name):
@@ -80,7 +90,7 @@ list_dfs = []
 
 # --- 2024 ---
 print("Procesando 2024...")
-df_2024 = pd.read_excel(files['2024'], sheet_name=0, header=1)
+df_2024 = pd.read_excel(file_bases_originales, sheet_name='2024', header=1)
 df_2024.rename(columns={'Número': 'id', 'Edades': 'edad', 'Género:': 'género', 'Sector': 'sector', 'Comunidad': 'comunidad', 'NSE': 'nse'}, inplace=True)
 df_2024.columns = [clean_col_name(c) for c in df_2024.columns]
 df_2024 = ensure_unique_columns(df_2024)
@@ -89,7 +99,7 @@ list_dfs.append(df_2024)
 
 # --- 2023 ---
 print("Procesando 2023...")
-df_2023 = pd.read_excel(files['2023'], sheet_name=0, header=1)
+df_2023 = pd.read_excel(file_bases_originales, sheet_name='2023', header=1)
 df_2023.rename(columns={'Número': 'id', 'Sector': 'sector', 'Comunidad': 'comunidad', 'NSE': 'nse', 'la gente': 'género'}, inplace=True)
 df_2023.columns = [clean_col_name(c) for c in df_2023.columns]
 df_2023 = ensure_unique_columns(df_2023)
@@ -98,7 +108,7 @@ list_dfs.append(df_2023)
 
 # --- 2022 ---
 print("Procesando 2022...")
-df_2022 = pd.read_excel(files['2022'], sheet_name=0, header=1)
+df_2022 = pd.read_excel(file_bases_originales, sheet_name='2022', header=1)
 df_2022.rename(columns={'Num': 'id', 'Edad': 'edad', 'Componente': 'sector', 'Comunidad:': 'comunidad', 'Género:': 'género', 'NSE': 'nse'}, inplace=True)
 df_2022.columns = [clean_col_name(c) for c in df_2022.columns]
 df_2022 = ensure_unique_columns(df_2022)
@@ -121,7 +131,7 @@ else:
 
 # --- 2025 ---
 print("Procesando 2025...")
-df_2025 = pd.read_excel(files['2025'], header=3)
+df_2025 = pd.read_excel(file_bases_originales, sheet_name='2025', header=3)
 df_2025.dropna(axis=1, how='all', inplace=True)
 df_2025 = df_2025[df_2025['Nro'].notna() & (df_2025['Nro'] != 'Desc.')]
 df_2025.columns = [clean_col_name(c) for c in df_2025.columns]
@@ -191,6 +201,53 @@ def normalizar_edad(v):
 
 if 'edad' in df_all.columns:
     df_all['edad'] = df_all['edad'].apply(normalizar_edad)
+
+# --- CREACIÓN DE PERSONA ID Y RELLENO LONGITUDINAL ---
+print("Creando identificador de persona y aplicando imputación longitudinal...")
+if 'nombre' in df_all.columns:
+    df_all['persona_id'] = df_all['nombre'].apply(crear_persona_id)
+else:
+    df_all['persona_id'] = ["anonimo_" + str(np.random.randint(100000, 999999)) for _ in range(len(df_all))]
+
+df_all = df_all.sort_values(['persona_id', 'año'])
+for col in ['género', 'sector', 'comunidad', 'edad', 'nse']:
+    if col in df_all.columns:
+        mask = ~df_all['persona_id'].str.startswith('anonimo')
+        df_all.loc[mask, col] = df_all.loc[mask].groupby('persona_id')[col].transform(lambda x: x.ffill().bfill())
+
+df_all = df_all.sort_values(['año']).reset_index(drop=True)
+
+# --- MOTOR DE INFERENCIA DE PERCEPCIÓN ---
+print("Calculando motor de inferencia de percepción...")
+def motor_inferencia(row):
+    # Lógica de Exclusión
+    col_neg = [c for c in row.index if 'no vi' in str(c).lower() or 'no viu' in str(c).lower() or 'negativo' in str(c).lower()]
+    for cn in col_neg:
+        if str(row[cn]).strip().lower() in ['si', '1', 'x', 'verdadero', 'no vió algún aspecto positivo aún', 'no vio algún aspecto positivo aún']:
+            return 'No Positiva'
+    
+    # Lógica de Aserción
+    col_pos = [c for c in row.index if any(k in str(c).lower() for k in ['puestos de trabajo', 'caminos', 'mejoras', 'formaci', 'comercio'])]
+    for cp in col_pos:
+        val = str(row[cp]).strip().lower()
+        if val not in ['nan', '0', '-', 'no', '', 'no sabe', 'ninguno']:
+            return 'Positiva'
+            
+    return 'Neutra'
+
+df_all['percepcion_final'] = df_all.apply(motor_inferencia, axis=1)
+
+# Añadir Contexto Corporativo Histórico
+print("Añadiendo contexto corporativo histórico...")
+contexto_corporativo = {
+    2022: {'Hitos Corporativos Positivos': 'Licencia de Cogeneración y nuevo socio Heinzel.', 'Hitos de Crisis / Contexto': 'Planificación bajo estándares IFC.'},
+    2023: {'Hitos Corporativos Positivos': 'Botadura de barcaza y nuevo CEO.', 'Hitos de Crisis / Contexto': 'Avance industrial visible.'},
+    2024: {'Hitos Corporativos Positivos': '1.800 empleados y 67k ha plantadas.', 'Hitos de Crisis / Contexto': 'Comienzan rumores de dificultades financieras.'},
+    2025: {'Hitos Corporativos Positivos': 'Nuevo acuerdo con BID Invest (Octubre) para evaluar polo industrial.', 'Hitos de Crisis / Contexto': 'Despidos masivos y rechazo inicial de préstamo del BID (Abril).'}
+}
+
+df_all['hitos corporativos positivos'] = df_all['año'].map(lambda x: contexto_corporativo.get(x, {}).get('Hitos Corporativos Positivos', np.nan))
+df_all['hitos de crisis o contexto'] = df_all['año'].map(lambda x: contexto_corporativo.get(x, {}).get('Hitos de Crisis / Contexto', np.nan))
 
 # Limpiar restos
 cols_to_drop = [c for c in df_all.columns if c.startswith('response') or c.startswith('unnamed') or c.startswith('otro especifique') or c.startswith('open ended response')]

@@ -101,8 +101,8 @@ percepcion_paracel = [
 
 
 print("Generando gráficos...")
-plot_evolution(df, aspectos_positivos, "Evolución de Aspectos Positivos de la Comunidad (2022-2024)", "evolucion_positivos.png")
-plot_evolution(df, aspectos_negativos, "Evolución de Principales Problemas / Aspectos Negativos (2022-2024)", "evolucion_negativos.png")
+plot_evolution(df, aspectos_positivos, "Evolución de Aspectos Positivos de la Comunidad (2022-2025)", "evolucion_positivos.png")
+plot_evolution(df, aspectos_negativos, "Evolución de Principales Problemas / Aspectos Negativos (2022-2025)", "evolucion_negativos.png")
 plot_evolution(df, medios_comunicacion, "Evolución de Medios por los que se enteraron de Paracel", "evolucion_medios.png")
 plot_evolution(df, percepcion_paracel, "Efectos Positivos Esperados de la Fábrica Paracel", "evolucion_expectativas_paracel.png")
 
