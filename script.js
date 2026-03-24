@@ -70,7 +70,7 @@ const configOcupacion = ['no trabaja actualmente', 'funcionario público', 'empl
 
 // COLUMNAS DIRECTAS PARA AGRUPAR (Pie/Bar normal por categorías únicas)
 const colTemores = 'un temor';
-const colEstudios = 'estudios';
+const colEstudios = 'estudios'; // fallback a nivel_de_estudios si rename aplicado
 const colIngresos = 'podría indicarnos en qué rango se encuentra sus ingresos económicos familiaresesto quiere decir la suma de lo que ganan todas las personas que trabajan en la casa';
 
 // CONSTANTES Y COLORES DE GRÁFICOS
@@ -162,45 +162,20 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('login-screen').style.display = "none";
         document.getElementById('dashboard-screen').style.display = "flex";
 
-        // Pre-procesar columna de percepción (fuente preferente: percepcion_final si existe)
+        // Pre-procesar columna de percepción
+        // Si ya viene 'percepción_clasificada' con valor válido (del script de exportación), usarla directamente
         encuestasData.forEach(d => {
-            // 1) Si existe una columna ya consolidada de percepción, se utiliza como fuente de verdad
-            const pf = (d['percepcion_final'] ?? d['percepción_final'] ?? d['percepcion'] ?? d['percepción'] ?? '').toString().trim().toLowerCase();
-
-            if (pf) {
-                if (pf.includes('posit')) d['percepción_clasificada'] = 'Positiva';
-                else if (pf.includes('negat')) d['percepción_clasificada'] = 'Negativa';
-                else if (pf.includes('neutr')) d['percepción_clasificada'] = 'Neutra';
+            const ya = (d['percepción_clasificada'] ?? '').toString().trim().toLowerCase();
+            if (ya.includes('posit') || ya.includes('negat') || ya.includes('neutr')) {
+                if (ya.includes('posit')) d['percepción_clasificada'] = 'Positiva';
+                else if (ya.includes('negat')) d['percepción_clasificada'] = 'Negativa';
                 else d['percepción_clasificada'] = 'Neutra';
                 return;
             }
-
-            // 2) Fallback heurístico (solo si no existe percepcion_final)
-            const keys = Object.keys(d);
-
-            // Heurística: columna que suele capturar "no encuentra aspectos negativos" o equivalentes
-            const noNegKey = keys.find(k => k.toLowerCase().includes('no encuentra aspectos negativos') || k.toLowerCase().includes('no encuentra aspecto negativo'));
-            const noPosKey = keys.find(k => k.toLowerCase().includes('no vió algún aspecto positivo') || k.toLowerCase().includes('no vio algun aspecto positivo'));
-            const temorKey = keys.find(k => k.toLowerCase().includes('temor'));
-            const expKey = keys.find(k => k.toLowerCase().includes('expectativa'));
-
-            const noNeg = (noNegKey ? d[noNegKey] : '').toString().trim().toLowerCase();
-            const noPos = (noPosKey ? d[noPosKey] : '').toString().trim().toLowerCase();
-            const temor = (temorKey ? d[temorKey] : '').toString().trim().toLowerCase();
-            const exp = (expKey ? d[expKey] : '').toString().trim().toLowerCase();
-
-            const dijoNoNeg = (noNeg && (noNeg.includes('si') || noNeg === 'true'));
-            const dijoNoPos = (noPos && (noPos.includes('si') || noPos === 'true'));
-
-            // Positiva si explícitamente declara no encontrar aspectos negativos y no declara ausencia de positivos
-            const isPositiva = dijoNoNeg && !dijoNoPos;
-
-            // Negativa si reporta temor (no vacío, no 'ninguno', no NS/NR)
-            const isNegativa = !isPositiva && temor && !['nan','ninguno','ninguna','ns','nr','no','false'].includes(temor);
-
-            // Neutra si no cae en positiva ni negativa
-            if (isPositiva) d['percepción_clasificada'] = 'Positiva';
-            else if (isNegativa) d['percepción_clasificada'] = 'Negativa';
+            // Fallback: intentar derivarla de percepcion_final u otras columnas
+            const pf = (d['percepcion_final'] ?? d['percepción_final'] ?? d['percepcion'] ?? d['percepción'] ?? '').toString().trim().toLowerCase();
+            if (pf.includes('posit')) d['percepción_clasificada'] = 'Positiva';
+            else if (pf.includes('negat')) d['percepción_clasificada'] = 'Negativa';
             else d['percepción_clasificada'] = 'Neutra';
         });
 // Crear botones de filtros
@@ -601,9 +576,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Fuzzy Key Finder para sortear encondings raros
                 let actualKey = Object.keys(currentData[0] || {}).find(k => k.toLowerCase().includes(keySubstring.toLowerCase())) || keySubstring;
 
+                // Presencia: no vacío, no nulo, y si es numérico debe ser != 0
                 let count = yearData.filter(d => {
                     let v = d[actualKey];
                     if (v === null || v === undefined) return false;
+                    // Valores numéricos: 0 = ausencia
+                    if (v === 0 || v === false || v === '0' || v === 'false') return false;
                     let strV = String(v).trim().toLowerCase();
                     if (strV === "" || strV === "-" || strV === "nan" || strV === "ninguno" || strV === "ninguna") return false;
                     return true;
