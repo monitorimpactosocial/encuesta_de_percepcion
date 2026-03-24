@@ -935,270 +935,424 @@ document.addEventListener("DOMContentLoaded", () => {
         URL.revokeObjectURL(url);
     });
 
-    // --- MÓDULO GIS LEAFLET ---
+    // --- MÓDULO GIS LEAFLET (HEAT MAP MEJORADO) ---
+    let currentMapMetric = 'positiva'; // 'positiva' | 'temor' | 'balance'
+
     function initLeafletMap() {
         if (leafletMap) {
-            leafletMap.invalidateSize(); // Refresco si ya existe
+            leafletMap.invalidateSize();
+            updateMapColors();
             return;
         }
 
-        // Crear mapa base centrado en Concepcion
         leafletMap = L.map('map-container').setView([-23.4, -57.4], 8);
 
-        // Capa satelital de fondo (Esri World Imagery)
         const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri'
         }).addTo(leafletMap);
 
-        // Capa callejera oscura de fondo (CartoDB DarkMatter)
         const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap & CartoDB'
         });
 
-        // Estilos para GeoJSON
-        const stylePropiedades = { color: "#90ff00", weight: 2, fillColor: "#90ff00", fillOpacity: 0.2 }; // Lime
-        const styleIndigenas = { color: "#ff007f", weight: 2, fillColor: "#ff007f", fillOpacity: 0.4 };   // Magenta
-        const styleComunidades = { color: "#00f0ff", weight: 2, fillColor: "#00f0ff", fillOpacity: 0.3 }; // Cyan
-        const styleDistritos = { color: "#ffffff", weight: 1, fillOpacity: 0.05, dashArray: '5, 5' };     // Blanco DASH
+        // Inyectar selector de métrica + panel estadísticas en el tab de mapas
+        _injectMapControls();
+
+        const styleDistritos   = { color: "#ffffff", weight: 1, fillOpacity: 0.05, dashArray: '5, 5' };
+        const stylePropiedades = { color: "#90ff00", weight: 2, fillColor: "#90ff00", fillOpacity: 0.2 };
+        const styleIndigenas   = { color: "#ff007f", weight: 2, fillColor: "#ff007f", fillOpacity: 0.4 };
+        const styleComunidades = { color: "#00f0ff", weight: 2, fillColor: "#00f0ff", fillOpacity: 0.3 };
 
         mapLayers = {};
+        dynamicLayers = [];
         let basemaps = { "Satélite (Esri)": satelliteLayer, "Calles Oscuro (CartoDB)": darkLayer };
         let overlays = {};
 
-        dynamicLayers = []; // Reset capas dinamicas
-
-        // Validamos existencia de mapasData inyectado por script externo
         if (typeof mapasData !== 'undefined') {
-
-            // 1. Distritos (Paracel)
             if (mapasData['distritos_paracel']) {
                 let layer = L.geoJSON(mapasData['distritos_paracel'], {
                     style: styleDistritos,
-                    onEachFeature: function (feature, layer) {
-                        let txt = `<b>Distrito:</b> ${feature.properties.DISTRITO || feature.properties.DIST_DESC_ || 'N/A'}`;
-                        layer.options.originalPopupText = txt;
-                        layer.bindPopup(txt);
+                    onEachFeature: (feature, layer) => {
+                        let name = feature.properties.DISTRITO || feature.properties.DIST_DESC_ || 'N/A';
+                        layer.options._geoName = name;
+                        layer.bindPopup(`<b>Distrito:</b> ${name}`);
                     }
                 }).addTo(leafletMap);
-                mapLayers['Distritos'] = layer;
                 overlays['Límites Distritales'] = layer;
-                dynamicLayers.push({ layer: layer, defaultColor: '#ffffff' });
+                dynamicLayers.push({ layer, defaultColor: '#ffffff' });
             }
 
-            // 2. Propiedades Forestales
             if (mapasData['propiedades_forestales']) {
                 let layer = L.geoJSON(mapasData['propiedades_forestales'], {
                     style: stylePropiedades,
-                    onEachFeature: function (feature, layer) {
-                        let txt = `<b>Estancia:</b> ${feature.properties.Estancia || 'N/A'} <br/> <b>Área:</b> ${feature.properties.Area || 'N/A'} Ha`;
-                        layer.options.originalPopupText = txt;
-                        layer.bindPopup(txt);
+                    onEachFeature: (feature, layer) => {
+                        layer.bindPopup(`<b>Estancia:</b> ${feature.properties.Estancia || 'N/A'} <br><b>Área:</b> ${feature.properties.Area || 'N/A'} Ha`);
                     }
                 }).addTo(leafletMap);
-                mapLayers['Forestales'] = layer;
                 overlays['Núcleos Forestales PARACEL'] = layer;
             }
 
-            // 3. Componentes Industriales
             if (mapasData['componentes_industriales']) {
                 let layer = L.geoJSON(mapasData['componentes_industriales'], {
                     style: { color: "#ffea00", weight: 3, fillColor: "#ffea00", fillOpacity: 0.6 },
-                    onEachFeature: function (feature, layer) {
-                        let txt = `<b>Instalación:</b> ${feature.properties.proyecto || feature.properties.Name || 'Componente Industrial'}`;
-                        layer.options.originalPopupText = txt;
-                        layer.bindPopup(txt);
+                    onEachFeature: (feature, layer) => {
+                        layer.bindPopup(`<b>Instalación:</b> ${feature.properties.proyecto || feature.properties.Name || 'Componente Industrial'}`);
                     }
                 }).addTo(leafletMap);
-                mapLayers['Industria'] = layer;
                 overlays['Planta Industrial y Puertos'] = layer;
             }
 
-            // 4. Comunidades Indígenas
             if (mapasData['comunidades_indigenas']) {
                 let layer = L.geoJSON(mapasData['comunidades_indigenas'], {
                     style: styleIndigenas,
-                    onEachFeature: function (feature, layer) {
-                        let txt = `<b>Comunidad Indígena:</b> ${feature.properties.COM_DESC || feature.properties.BARLO_DESC || 'N/A'}`;
-                        layer.options.originalPopupText = txt;
-                        layer.bindPopup(txt);
+                    onEachFeature: (feature, layer) => {
+                        let name = feature.properties.COM_DESC || feature.properties.BARLO_DESC || 'N/A';
+                        layer.options._geoName = name;
+                        layer.bindPopup(`<b>Comunidad Indígena:</b> ${name}`);
                     }
                 }).addTo(leafletMap);
-                mapLayers['Indigenas'] = layer;
                 overlays['Comunidades Indígenas'] = layer;
-                dynamicLayers.push({ layer: layer, defaultColor: '#ff007f' });
+                dynamicLayers.push({ layer, defaultColor: '#ff007f' });
             }
 
-            // 5. Comunidades Rurales (Industrial + Forestal)
             let comunidadesLayer = L.layerGroup().addTo(leafletMap);
             if (mapasData['comunidades_industriales']) {
-                let indLayer = L.geoJSON(mapasData['comunidades_industriales'], {
+                let sub = L.geoJSON(mapasData['comunidades_industriales'], {
                     style: styleComunidades,
-                    onEachFeature: function (feature, layer) {
-                        let txt = `<b>Comunidad (Z. Ind.):</b> ${feature.properties.Localidade || 'N/A'}`;
-                        layer.options.originalPopupText = txt;
-                        layer.bindPopup(txt);
+                    onEachFeature: (feature, layer) => {
+                        let name = feature.properties.Localidade || feature.properties.Localidad || 'N/A';
+                        layer.options._geoName = name;
+                        layer.bindPopup(`<b>Comunidad (Z. Ind.):</b> ${name}`);
                     }
                 }).addTo(comunidadesLayer);
-                dynamicLayers.push({ layer: indLayer, defaultColor: '#00f0ff' });
+                dynamicLayers.push({ layer: sub, defaultColor: '#00f0ff' });
             }
             if (mapasData['comunidades_forestales']) {
-                let forLayer = L.geoJSON(mapasData['comunidades_forestales'], {
+                let sub = L.geoJSON(mapasData['comunidades_forestales'], {
                     style: styleComunidades,
-                    onEachFeature: function (feature, layer) {
-                        let txt = `<b>Comunidad (Z. For.):</b> ${feature.properties.Localidad || 'N/A'}`;
-                        layer.options.originalPopupText = txt;
-                        layer.bindPopup(txt);
+                    onEachFeature: (feature, layer) => {
+                        let name = feature.properties.Localidad || feature.properties.Localidade || 'N/A';
+                        layer.options._geoName = name;
+                        layer.bindPopup(`<b>Comunidad (Z. For.):</b> ${name}`);
                     }
                 }).addTo(comunidadesLayer);
-                dynamicLayers.push({ layer: forLayer, defaultColor: '#00f0ff' });
+                dynamicLayers.push({ layer: sub, defaultColor: '#00f0ff' });
             }
             overlays['Comunidades de Influencia Formal'] = comunidadesLayer;
 
-            // 6. Barrios Concepción y Amambay
             let barriosLayer = L.layerGroup();
-            if (mapasData['barrios_concepcion']) {
-                let layerC = L.geoJSON(mapasData['barrios_concepcion'], {
-                    style: { color: "#ffffff", weight: 0.5, fillColor: "#ffffff", fillOpacity: 0.1 },
-                    onEachFeature: function (feature, layer) {
-                        let txt = `<b>Barrio (Concepción):</b> ${feature.properties.BARLO_DESC || feature.properties.BARRIO || feature.properties.BAR_LOC || 'N/A'}`;
-                        layer.options.originalPopupText = txt;
-                        layer.bindPopup(txt);
-                    }
-                }).addTo(barriosLayer);
-                dynamicLayers.push({ layer: layerC, defaultColor: '#ffffff' });
-            }
-            if (mapasData['barrios_amambay']) {
-                let layerA = L.geoJSON(mapasData['barrios_amambay'], {
-                    style: { color: "#ffffff", weight: 0.5, fillColor: "#ffffff", fillOpacity: 0.1 },
-                    onEachFeature: function (feature, layer) {
-                        let txt = `<b>Barrio (Amambay):</b> ${feature.properties.BARLO_DESC || feature.properties.BARRIO || feature.properties.BAR_LOC || 'N/A'}`;
-                        layer.options.originalPopupText = txt;
-                        layer.bindPopup(txt);
-                    }
-                }).addTo(barriosLayer);
-                dynamicLayers.push({ layer: layerA, defaultColor: '#ffffff' });
-            }
+            const barStyle = { color: "#ffffff", weight: 0.5, fillColor: "#ffffff", fillOpacity: 0.1 };
+            ['barrios_concepcion', 'barrios_amambay'].forEach(key => {
+                if (mapasData[key]) {
+                    let sub = L.geoJSON(mapasData[key], {
+                        style: barStyle,
+                        onEachFeature: (feature, layer) => {
+                            let name = feature.properties.BARLO_DESC || feature.properties.BARRIO || feature.properties.BAR_LOC || 'N/A';
+                            layer.options._geoName = name;
+                            layer.bindPopup(`<b>Barrio:</b> ${name}`);
+                        }
+                    }).addTo(barriosLayer);
+                    dynamicLayers.push({ layer: sub, defaultColor: '#ffffff' });
+                }
+            });
             overlays['Capa Urbana / Barrios Centrales'] = barriosLayer;
 
         } else {
-            console.error("No se detectó la variable mapasData. Revisa si procesar_mapas.py corrió y si mapas_data.js está enlazado correctamente.");
+            console.warn("mapasData no detectado. El mapa de calor funcionará cuando se carguen las capas GIS.");
         }
 
-        // Agregar control de capas a la vista TopRight
         L.control.layers(basemaps, overlays, { collapsed: false }).addTo(leafletMap);
-        leafletMap.invalidateSize(); // Forzamos recuadro correcto
-
-        // Disparar coloración inicial
+        leafletMap.invalidateSize();
         updateMapColors();
     }
 
-    // --- ALGORITMO CHOROPLETH DINÁMICO ---
+    // Inyecta controles de métrica y panel de estadísticas en el contenedor del mapa
+    function _injectMapControls() {
+        const tabMapas = document.getElementById('tab-mapas');
+        if (!tabMapas || document.getElementById('map-metric-selector')) return;
+
+        // Inserta selector de métrica arriba del mapa
+        const selectorHTML = `
+        <div id="map-metric-selector" style="
+            display:flex; gap:10px; padding:12px 16px 8px;
+            flex-wrap:wrap; align-items:center; border-bottom:1px solid var(--glass-border);
+            background:var(--glass-bg); backdrop-filter:blur(8px);
+        ">
+            <span style="font-weight:700; color:var(--text); font-size:13px;">🗺️ Mapa de Calor:</span>
+            <button class="map-metric-btn active" data-metric="positiva"
+                style="padding:6px 14px; border-radius:6px; border:1px solid #22c55e; background:rgba(34,197,94,0.2); color:#22c55e; cursor:pointer; font-size:12px; font-weight:600;">
+                ✅ Percepción Positiva
+            </button>
+            <button class="map-metric-btn" data-metric="temor"
+                style="padding:6px 14px; border-radius:6px; border:1px solid #ef4444; background:transparent; color:var(--text-sec); cursor:pointer; font-size:12px; font-weight:600;">
+                ⚠️ Presencia de Temores
+            </button>
+            <button class="map-metric-btn" data-metric="balance"
+                style="padding:6px 14px; border-radius:6px; border:1px solid #06b6d4; background:transparent; color:var(--text-sec); cursor:pointer; font-size:12px; font-weight:600;">
+                ⚖️ Balance Neto (Pos−Neg)
+            </button>
+            <span id="map-sample-info" style="margin-left:auto; font-size:11px; color:var(--text-sec); font-style:italic;"></span>
+        </div>
+        <div id="map-stats-panel" style="
+            display:flex; height:calc(100% - 48px); overflow:hidden;
+        ">
+            <div id="map-community-list" style="
+                width:260px; min-width:220px; overflow-y:auto;
+                padding:10px 6px; border-right:1px solid var(--glass-border);
+                background:rgba(0,0,0,0.18); font-size:12px;
+                scrollbar-width:thin;
+            ">
+                <div style="font-weight:700; color:var(--text); margin-bottom:8px; padding:0 6px 6px; border-bottom:1px solid var(--glass-border);">
+                    📊 Ranking por Comunidad
+                </div>
+                <div id="map-community-rows" style="display:flex;flex-direction:column;gap:4px;"></div>
+            </div>
+            <div id="map-container" style="flex:1; min-height:400px;"></div>
+        </div>`;
+
+        // Reemplaza el map-container si ya existe como hijo directo
+        const existing = tabMapas.querySelector('#map-container');
+        if (existing && existing.parentElement === tabMapas) {
+            existing.outerHTML = selectorHTML;
+        } else {
+            tabMapas.insertAdjacentHTML('afterbegin', selectorHTML);
+        }
+
+        // Event listeners para botones de métrica
+        tabMapas.querySelectorAll('.map-metric-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabMapas.querySelectorAll('.map-metric-btn').forEach(b => {
+                    b.style.background = 'transparent';
+                    b.style.color = 'var(--text-sec)';
+                    b.classList.remove('active');
+                });
+                btn.classList.add('active');
+                btn.style.background = currentMapMetric === 'positiva' ? 'rgba(34,197,94,0.2)' :
+                                       currentMapMetric === 'temor'    ? 'rgba(239,68,68,0.2)'  :
+                                                                          'rgba(6,182,212,0.2)';
+                btn.style.color = currentMapMetric === 'positiva' ? '#22c55e' :
+                                  currentMapMetric === 'temor'    ? '#ef4444' : '#06b6d4';
+                currentMapMetric = btn.dataset.metric;
+                // Estilo activo para el botón recién seleccionado
+                const colors = { positiva: ['rgba(34,197,94,0.2)', '#22c55e'], temor: ['rgba(239,68,68,0.2)', '#ef4444'], balance: ['rgba(6,182,212,0.2)', '#06b6d4'] };
+                const [bg, fg] = colors[currentMapMetric];
+                btn.style.background = bg;
+                btn.style.color = fg;
+                updateMapColors();
+            });
+        });
+    }
+
+    // Calcula estadísticas por comunidad desde currentData
+    function _computeMapStats() {
+        const statsRaw = {};
+        const MIN_N = 5; // mínimo para mostrar dato en mapa
+
+        currentData.forEach(d => {
+            const com = String(d['comunidad'] || d['distrito'] || d['barrio'] || '').trim();
+            if (!com || com.toLowerCase() === 'nan' || com === '-') return;
+
+            if (!statsRaw[com]) statsRaw[com] = { total: 0, pos: 0, neg: 0, temor: 0 };
+            statsRaw[com].total++;
+            const perc = d['percepción_clasificada'] || '';
+            if (perc === 'Positiva') statsRaw[com].pos++;
+            if (perc === 'Negativa') statsRaw[com].neg++;
+            // Temor: si columna 'es_panel' no aplica; usamos percepción negativa como proxy básico
+            // o la columna 'un temor' si tiene valor no vacío/0
+            const tVal = d['un temor'] ?? d['tiene_temor'] ?? '';
+            const tStr = String(tVal).toLowerCase().trim();
+            const hasTemor = tVal !== 0 && tVal !== false && tStr !== '' && tStr !== '0' && tStr !== 'false' && tStr !== 'nan' && tStr !== 'ninguno' && tStr !== 'ninguna';
+            if (hasTemor) statsRaw[com].temor++;
+        });
+
+        const stats = {};
+        for (const com in statsRaw) {
+            const s = statsRaw[com];
+            if (s.total < MIN_N) continue;
+            stats[com] = {
+                n: s.total,
+                pctPos:    (s.pos    / s.total) * 100,
+                pctNeg:    (s.neg    / s.total) * 100,
+                pctTemor:  (s.temor  / s.total) * 100,
+                balance:   ((s.pos - s.neg) / s.total) * 100
+            };
+        }
+        return stats;
+    }
+
+    // Normaliza nombre para fuzzy matching
+    function _normGeo(name) {
+        if (!name) return '';
+        return String(name).toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '');
+    }
+
+    // Semáforo NAUTA: umbral 70 / 50 (alineado al reporte R)
+    function _getHeatColor(value, metric) {
+        if (metric === 'temor') {
+            // Para temores: invertir — más temor = más rojo
+            if (value >= 30) return '#ef4444';
+            if (value >= 15) return '#f59e0b';
+            return '#22c55e';
+        }
+        // Para positiva y balance (NAUTA: Favorable ≥70, Atención 50-70, Crítico <50)
+        if (value >= 70) return '#22c55e';  // Verde — Favorable
+        if (value >= 50) return '#f59e0b';  // Ámbar — Atención
+        return '#ef4444';                   // Rojo   — Crítico
+    }
+
+    // Genera el HTML del popup para una comunidad con datos
+    function _buildPopup(name, s, metric) {
+        const estado = metric === 'temor'
+            ? (s.pctTemor >= 30 ? 'Crítico' : s.pctTemor >= 15 ? 'Atención' : 'Favorable')
+            : (s.pctPos >= 70 ? 'Favorable' : s.pctPos >= 50 ? 'Atención' : 'Crítico');
+        const stateColors = { Favorable: '#22c55e', Atención: '#f59e0b', Crítico: '#ef4444' };
+        const col = stateColors[estado];
+
+        return `
+        <div style="min-width:200px; font-family:Inter,sans-serif; font-size:13px;">
+            <div style="font-weight:700; font-size:15px; margin-bottom:8px; border-bottom:1px solid #ddd; padding-bottom:6px;">
+                📍 ${name}
+            </div>
+            <div style="display:grid; grid-template-columns:auto 1fr; gap:4px 10px; line-height:1.6;">
+                <span style="color:#777;">Base (n)</span>   <b>${s.n}</b>
+                <span style="color:#777;">Percepción +</span> <b style="color:#22c55e;">${s.pctPos.toFixed(1)}%</b>
+                <span style="color:#777;">Percepción –</span> <b style="color:#ef4444;">${s.pctNeg.toFixed(1)}%</b>
+                <span style="color:#777;">Con temor</span>  <b style="color:#f59e0b;">${s.pctTemor.toFixed(1)}%</b>
+                <span style="color:#777;">Balance</span>    <b>${s.balance >= 0 ? '+' : ''}${s.balance.toFixed(1)} pp</b>
+            </div>
+            <div style="margin-top:8px; padding:5px 8px; border-radius:5px; background:${col}22; color:${col}; font-weight:700; text-align:center; font-size:12px;">
+                🚦 ${estado}
+            </div>
+        </div>`;
+    }
+
+    // Actualiza el panel lateral con ranking de comunidades
+    function _updateCommunityPanel(stats, metric) {
+        const container = document.getElementById('map-community-rows');
+        const infoEl = document.getElementById('map-sample-info');
+        if (!container) return;
+
+        const getValue = s => metric === 'positiva' ? s.pctPos :
+                              metric === 'temor'    ? s.pctTemor : s.balance;
+        const getColor = s => _getHeatColor(getValue(s), metric);
+        const suffix = metric === 'balance' ? ' pp' : '%';
+
+        // Ordenar: positiva/balance desc, temor asc
+        let entries = Object.entries(stats).sort((a, b) =>
+            metric === 'temor' ? a[1].pctTemor - b[1].pctTemor : getValue(b[1]) - getValue(a[1])
+        );
+
+        const totalN = Object.values(stats).reduce((a, s) => a + s.n, 0);
+        if (infoEl) infoEl.textContent = `${entries.length} comunidades · n=${totalN}`;
+
+        container.innerHTML = entries.map(([name, s]) => {
+            const val = getValue(s);
+            const col = getColor(s);
+            const barPct = metric === 'balance' ? Math.max(0, val + 100) / 2 : Math.min(100, Math.max(0, val));
+            return `
+            <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:7px 9px; border-left:3px solid ${col};">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                    <span style="font-weight:600; color:var(--text); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:155px;" title="${name}">${name}</span>
+                    <span style="font-weight:700; color:${col}; font-size:12px;">${val >= 0 ? (metric === 'balance' && val > 0 ? '+' : '') : ''}${val.toFixed(1)}${suffix}</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.1); border-radius:4px; height:5px; overflow:hidden;">
+                    <div style="width:${barPct}%; height:100%; background:${col}; border-radius:4px; transition:width 0.4s;"></div>
+                </div>
+                <div style="font-size:10px; color:var(--text-sec); margin-top:2px;">n=${s.n}</div>
+            </div>`;
+        }).join('');
+    }
+
+    // --- ALGORITMO CHOROPLETH DINÁMICO (HEAT MAP MEJORADO) ---
     function updateMapColors() {
         if (!leafletMap || dynamicLayers.length === 0) return;
 
-        // 1. Calcular Percepción por Comunidad / Área
-        let stats = {};
+        const stats = _computeMapStats();
+        const statsNorm = {};
+        for (const com in stats) statsNorm[_normGeo(com)] = { name: com, ...stats[com] };
 
-        currentData.forEach(d => {
-            let com = String(d['comunidad'] || d['distrito'] || d['barrio'] || '').trim().toLowerCase();
-            if (!com || com === 'nan' || com === '-') return;
-
-            if (!stats[com]) stats[com] = { total: 0, pos: 0 };
-            stats[com].total++;
-            if (d['percepción_clasificada'] === 'Positiva') {
-                stats[com].pos++;
+        // Función para buscar match fuzzy
+        const findStats = (featureName) => {
+            const fn = _normGeo(featureName);
+            if (statsNorm[fn]) return statsNorm[fn];
+            for (const k in statsNorm) {
+                if (k.length >= 3 && (fn.includes(k) || k.includes(fn))) {
+                    return statsNorm[k];
+                }
             }
-        });
+            return null;
+        };
 
-        // Convertir a porcentajes
-        let perceptMap = {};
-        for (let c in stats) {
-            perceptMap[c] = (stats[c].pos / stats[c].total) * 100;
-        }
-
-        // Helper para normalizar nombres y cruzar GIS con Excel (Fuzzy Matcher básico)
-        function normalizeName(name) {
-            if (!name) return "";
-            return String(name).toLowerCase()
-                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita acentos
-                .replace(/[^a-z0-9]/g, ""); // quita espacios y caracteres raros
-        }
-
-        let perceptMapNorm = {};
-        for (let c in perceptMap) {
-            perceptMapNorm[normalizeName(c)] = perceptMap[c];
-        }
-
-        // 2. Colorear capas
-        function getColorForPct(pct) {
-            if (pct >= 60) return '#00ff73'; // Verde - Alta Aceptacion
-            if (pct >= 40) return '#ffea00'; // Amarillo - Neutra / Riesgo
-            return '#ff007f'; // Rojo - Tension / Negatividad
-        }
+        const getValue = (s) => currentMapMetric === 'positiva' ? s.pctPos :
+                                 currentMapMetric === 'temor'    ? s.pctTemor : s.balance;
 
         dynamicLayers.forEach(layerObj => {
-            layerObj.layer.eachLayer(function (featureLayer) {
-                let props = featureLayer.feature.properties;
-                let featureName = props.COM_DESC || props.BARLO_DESC || props.Localidad || props.Localidade || props.DISTRITO || props.DIST_DESC_ || props.BAR_LOC || props.Comunidad || "";
+            layerObj.layer.eachLayer(featureLayer => {
+                const props = featureLayer.feature.properties;
+                const featureName = props._geoName || props.COM_DESC || props.BARLO_DESC ||
+                    props.Localidad || props.Localidade || props.DISTRITO || props.DIST_DESC_ || props.BAR_LOC || '';
 
-                let normFeatureName = normalizeName(featureName);
+                const s = findStats(featureName);
 
-                let matchedPct = null;
-                // Match directo
-                if (perceptMapNorm[normFeatureName] !== undefined) {
-                    matchedPct = perceptMapNorm[normFeatureName];
+                if (s) {
+                    const val = getValue(s);
+                    const col = _getHeatColor(val, currentMapMetric);
+                    featureLayer.setStyle({ fillColor: col, color: col, fillOpacity: 0.65, weight: 1.5 });
+                    featureLayer.bindPopup(_buildPopup(featureName || s.name, s, currentMapMetric));
                 } else {
-                    // Match parcial
-                    for (let k in perceptMapNorm) {
-                        if (normFeatureName.includes(k) || k.includes(normFeatureName)) {
-                            if (k !== "" && normFeatureName !== "") {
-                                matchedPct = perceptMapNorm[k];
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                // Aplicar estilo cruzado
-                if (matchedPct !== null) {
-                    let c = getColorForPct(matchedPct);
-                    featureLayer.setStyle({ fillColor: c, color: c, fillOpacity: 0.6, weight: 2 });
-                    let originalPopup = featureLayer.options.originalPopupText || `<b>Área:</b> ${featureName}`;
-                    featureLayer.bindPopup(`${originalPopup}<br><hr style="margin:5px 0; border:rgba(0,0,0,0.1)"><b style="color:${c}; font-size:14px;">Percepción Positiva: ${matchedPct.toFixed(1)}%</b>`);
-                } else {
-                    // Reset a color nativo o nulo
-                    let defaultColor = layerObj.defaultColor || '#ffffff';
-                    featureLayer.setStyle({ fillColor: defaultColor, color: defaultColor, fillOpacity: 0.1, weight: 1 });
-                    featureLayer.bindPopup(featureLayer.options.originalPopupText || `<b>Área:</b> ${featureName}`);
+                    const dc = layerObj.defaultColor || '#ffffff';
+                    featureLayer.setStyle({ fillColor: dc, color: dc, fillOpacity: 0.08, weight: 0.8 });
+                    featureLayer.bindPopup(featureLayer.options.originalPopupText ||
+                        `<b>${featureName || 'Área'}</b><br><i style="color:#888;">Sin datos suficientes (n<5)</i>`);
                 }
             });
         });
 
-        // 3. Actualizar Leyenda Flotante
-        if (mapLegend) {
-            leafletMap.removeControl(mapLegend);
-        }
+        // Leyenda dinámica actualizada
+        _updateMapLegend();
 
+        // Actualizar panel lateral
+        _updateCommunityPanel(stats, currentMapMetric);
+    }
+
+    function _updateMapLegend() {
+        if (mapLegend) leafletMap.removeControl(mapLegend);
         mapLegend = L.control({ position: 'bottomleft' });
-        mapLegend.onAdd = function (map) {
+        mapLegend.onAdd = function () {
             let div = L.DomUtil.create('div', 'info legend');
-            div.style.background = 'var(--glass-bg)';
-            div.style.backdropFilter = 'blur(10px)';
-            div.style.padding = '12px 18px';
-            div.style.border = '1px solid var(--glass-border)';
-            div.style.borderRadius = '8px';
-            div.style.color = 'var(--text)';
-            div.style.fontSize = '12px';
-            div.style.lineHeight = '2';
-            div.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+            Object.assign(div.style, {
+                background: 'var(--glass-bg)', backdropFilter: 'blur(10px)',
+                padding: '12px 16px', border: '1px solid var(--glass-border)',
+                borderRadius: '10px', color: 'var(--text)', fontSize: '12px',
+                lineHeight: '2', boxShadow: '0 4px 8px rgba(0,0,0,0.4)', minWidth: '190px'
+            });
 
-            div.innerHTML += '<b style="font-size:14px">🗺️ Mapa de Calor (Percepción)</b><br>';
-            div.innerHTML += '<i style="background:#00ff73; width:12px; height:12px; display:inline-block; border-radius:50%; margin-right:8px; vertical-align:middle;"></i> Positiva (>60%)<br>';
-            div.innerHTML += '<i style="background:#ffea00; width:12px; height:12px; display:inline-block; border-radius:50%; margin-right:8px; vertical-align:middle;"></i> Neutra (40-60%)<br>';
-            div.innerHTML += '<i style="background:#ff007f; width:12px; height:12px; display:inline-block; border-radius:50%; margin-right:8px; vertical-align:middle;"></i> Negativa (<40%)<br>';
-            div.innerHTML += '<i style="background:#ffffff; opacity:0.3; border:1px solid #444; width:12px; height:12px; display:inline-block; border-radius:50%; margin-right:8px; vertical-align:middle;"></i> Sin datos suficientes';
+            const labels = {
+                positiva: ['🗺️ Percepción Positiva (NAUTA)',
+                    ['#22c55e', 'Favorable (\u226570%)'],
+                    ['#f59e0b', 'Atenci\u00f3n (50\u201370%)'],
+                    ['#ef4444', 'Cr\u00edtico (<50%)']],
+                temor: ['🗺️ Presencia de Temores',
+                    ['#22c55e', 'Bajo (<15%)'],
+                    ['#f59e0b', 'Moderado (15\u201330%)'],
+                    ['#ef4444', 'Alto (\u226530%)']],
+                balance: ['🗺️ Balance Neto (Pos\u2212Neg)',
+                    ['#22c55e', 'Positivo (\u2265+20pp)'],
+                    ['#f59e0b', 'Neutro (0\u201320pp)'],
+                    ['#ef4444', 'Negativo (<0pp)']]
+            };
+
+            const [title, ...rows] = labels[currentMapMetric] || labels['positiva'];
+            div.innerHTML = `<b style="font-size:13px;">${title}</b><br>` +
+                rows.map(([color, text]) =>
+                    `<i style="background:${color};width:14px;height:14px;display:inline-block;border-radius:3px;margin-right:7px;vertical-align:middle;"></i>${text}`
+                ).join('<br>') +
+                `<br><i style="background:rgba(255,255,255,0.12);border:1px solid #555;width:14px;height:14px;display:inline-block;border-radius:3px;margin-right:7px;vertical-align:middle;"></i>Sin datos suficientes`;
             return div;
         };
         mapLegend.addTo(leafletMap);
     }
 });
+
