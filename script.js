@@ -1,10 +1,48 @@
+// =========================================================
 // ESTADO GLOBAL
+// =========================================================
 let currentData = [];
 let charts = {};
-let leafletMap = null; // Instancia global del mapa de Leaflet
-let mapLayers = {}; // Capas del mapa
-let dynamicLayers = []; // Capas sujetas a repintado de mapa de calor
-let mapLegend = null; // Control de leyenda del mapa
+let leafletMap = null;
+let mapLayers = {};
+let dynamicLayers = [];
+let mapLegend = null;
+let mapInitialized = false;
+
+// ─── Utilidades ───────────────────────────────────────────
+// Debounce: evita re-renders en cascada al cambiar filtros
+function debounce(fn, delay) {
+    let timer;
+    return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };
+}
+
+// Loader overlay
+function showLoader() {
+    const el = document.getElementById('loader-overlay');
+    if (el) el.classList.add('active');
+}
+function hideLoader() {
+    const el = document.getElementById('loader-overlay');
+    if (el) el.classList.remove('active');
+}
+
+// countUp: anima un número desde 0 hasta target
+function countUp(el, target, suffix = '', decimals = 0) {
+    if (!el) return;
+    const start = Date.now();
+    const duration = 500; // ms
+    el.classList.add('kpi-anim');
+    const step = () => {
+        const elapsed = Date.now() - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+        const current = parseFloat((target * ease).toFixed(decimals));
+        el.textContent = (decimals > 0 ? current.toFixed(decimals) : current) + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = (decimals > 0 ? parseFloat(target).toFixed(decimals) : target) + suffix;
+    };
+    requestAnimationFrame(step);
+}
 
 // ESTADOS DE FILTROS (Múltiples selecciones permitidas por categoría)
 let activeFilters = {
@@ -44,41 +82,50 @@ const yearColors = {
 };
 const defaultColor = { bg: 'rgba(0, 240, 255, 0.75)', border: 'rgba(0, 240, 255, 1)' };
 
+// =========================================================
 // INICIALIZACIÓN
+// =========================================================
 document.addEventListener("DOMContentLoaded", () => {
 
-    // LOGIN STATE
-    const btnLogin = document.getElementById('btn-login');
-    const inputUser = document.getElementById('username');
-    const inputPass = document.getElementById('password');
+    // ─── Tema persistente ────────────────────────────────────
+    const savedTheme = localStorage.getItem('paracel_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const themeBtn2 = document.getElementById('btn-theme');
+    if (themeBtn2) themeBtn2.innerText = savedTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+
+    // ─── LOGIN STATE ─────────────────────────────────────────
+    const loginForm  = document.getElementById('login-form');
+    const inputUser  = document.getElementById('username');
+    const inputPass  = document.getElementById('password');
     const loginError = document.getElementById('login-error');
 
-    if (localStorage.getItem("paracel_logged") === "true") {
+    if (localStorage.getItem('paracel_logged') === 'true') {
         showDashboard();
     } else {
-        inputUser.focus();
+        if (inputUser) inputUser.focus();
     }
 
-    btnLogin.addEventListener('click', () => {
-        if (inputUser.value === "user" && inputPass.value === "123") {
-            localStorage.setItem("paracel_logged", "true");
-            loginError.style.display = "none";
+    const doLogin = () => {
+        if (inputUser.value === 'user' && inputPass.value === '123') {
+            localStorage.setItem('paracel_logged', 'true');
+            loginError.style.display = 'none';
             showDashboard();
         } else {
-            loginError.style.display = "block";
+            loginError.style.display = 'block';
+            inputPass.select();
         }
-    });
+    };
 
-    inputPass.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") btnLogin.click();
-    });
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => { e.preventDefault(); doLogin(); });
+    }
 
     document.getElementById('btn-logout').addEventListener('click', () => {
         localStorage.removeItem("paracel_logged");
         location.reload();
     });
 
-    document.getElementById('btn-reset').addEventListener('click', () => {
+    document.getElementById('btn-reset')?.addEventListener('click', () => {
         activeFilters = { 'es_panel': new Set(), 'percepción_clasificada': new Set(), 'año': new Set(), 'género': new Set(), 'edad': new Set(), 'nse': new Set(), 'comunidad': new Set() };
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
         updateDashboard();
@@ -104,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (targetId === 'tab-mapas') {
                     initLeafletMap();
                 } else {
-                    updateDashboard();
+                    debouncedUpdate();
                 }
             }, 50);
         });
@@ -115,26 +162,48 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('login-screen').style.display = "none";
         document.getElementById('dashboard-screen').style.display = "flex";
 
-        // Pre-procesar columna de percepcion
+        // Pre-procesar columna de percepción (fuente preferente: percepcion_final si existe)
         encuestasData.forEach(d => {
-            let keys = Object.keys(d);
-            let posKey = keys.find(k => k.toLowerCase().includes('positivo'));
-            let negKey = keys.find(k => k.toLowerCase().includes('temor'));
+            // 1) Si existe una columna ya consolidada de percepción, se utiliza como fuente de verdad
+            const pf = (d['percepcion_final'] ?? d['percepción_final'] ?? d['percepcion'] ?? d['percepción'] ?? '').toString().trim().toLowerCase();
 
-            let negResp = String(posKey ? d[posKey] : '').trim().toLowerCase();
-            // Si "no vi algun aspecto..." está vacío/nulo, significa que SÍ ve aspectos positivos.
-            let isPositiva = !(negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true');
+            if (pf) {
+                if (pf.includes('posit')) d['percepción_clasificada'] = 'Positiva';
+                else if (pf.includes('negat')) d['percepción_clasificada'] = 'Negativa';
+                else if (pf.includes('neutr')) d['percepción_clasificada'] = 'Neutra';
+                else d['percepción_clasificada'] = 'Neutra';
+                return;
+            }
 
-            // Si dijo algo negativo en "positivas" o es neutro, revisamos "temores"
-            let probResp = String(negKey ? d[negKey] : '').trim().toLowerCase();
-            let isNegativa = !isPositiva && (probResp !== '' && probResp !== 'nan' && probResp !== 'ninguno' && probResp !== 'ninguna' && !probResp.includes('ns') && !probResp.includes('nr') && probResp !== 'false');
+            // 2) Fallback heurístico (solo si no existe percepcion_final)
+            const keys = Object.keys(d);
 
+            // Heurística: columna que suele capturar "no encuentra aspectos negativos" o equivalentes
+            const noNegKey = keys.find(k => k.toLowerCase().includes('no encuentra aspectos negativos') || k.toLowerCase().includes('no encuentra aspecto negativo'));
+            const noPosKey = keys.find(k => k.toLowerCase().includes('no vió algún aspecto positivo') || k.toLowerCase().includes('no vio algun aspecto positivo'));
+            const temorKey = keys.find(k => k.toLowerCase().includes('temor'));
+            const expKey = keys.find(k => k.toLowerCase().includes('expectativa'));
+
+            const noNeg = (noNegKey ? d[noNegKey] : '').toString().trim().toLowerCase();
+            const noPos = (noPosKey ? d[noPosKey] : '').toString().trim().toLowerCase();
+            const temor = (temorKey ? d[temorKey] : '').toString().trim().toLowerCase();
+            const exp = (expKey ? d[expKey] : '').toString().trim().toLowerCase();
+
+            const dijoNoNeg = (noNeg && (noNeg.includes('si') || noNeg === 'true'));
+            const dijoNoPos = (noPos && (noPos.includes('si') || noPos === 'true'));
+
+            // Positiva si explícitamente declara no encontrar aspectos negativos y no declara ausencia de positivos
+            const isPositiva = dijoNoNeg && !dijoNoPos;
+
+            // Negativa si reporta temor (no vacío, no 'ninguno', no NS/NR)
+            const isNegativa = !isPositiva && temor && !['nan','ninguno','ninguna','ns','nr','no','false'].includes(temor);
+
+            // Neutra si no cae en positiva ni negativa
             if (isPositiva) d['percepción_clasificada'] = 'Positiva';
             else if (isNegativa) d['percepción_clasificada'] = 'Negativa';
             else d['percepción_clasificada'] = 'Neutra';
         });
-
-        // Crear botones de filtros
+// Crear botones de filtros
         createFilterButtons('filter-muestra', 'es_panel');
         createFilterButtons('filter-percepcion', 'percepción_clasificada');
         createFilterButtons('filter-anio', 'año');
@@ -157,25 +226,22 @@ document.addEventListener("DOMContentLoaded", () => {
             .sort();
 
         uniqueValues.forEach(val => {
-            const btn = document.createElement("button");
-            btn.className = "filter-btn";
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
             btn.dataset.col = colName;
             btn.dataset.val = String(val);
             btn.innerText = String(val).charAt(0).toUpperCase() + String(val).slice(1);
 
-            // Evento click (Single select vs Múltiple / Toggle con CTRL)
             btn.addEventListener('click', (e) => {
                 const isMultiSelect = e.ctrlKey || e.metaKey;
                 const vStr = String(val);
 
                 if (!isMultiSelect) {
-                    // Si NO apretó CTRL, Limpiar todos los botones de este grupo y dejar solo este
                     activeFilters[colName].clear();
                     container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                     activeFilters[colName].add(vStr);
                     btn.classList.add('active');
                 } else {
-                    // Si SÍ apretó CTRL, comportamiento Toggle
                     if (activeFilters[colName].has(vStr)) {
                         activeFilters[colName].delete(vStr);
                         btn.classList.remove('active');
@@ -184,145 +250,333 @@ document.addEventListener("DOMContentLoaded", () => {
                         btn.classList.add('active');
                     }
                 }
-                updateDashboard();
+                debouncedUpdate();
             });
 
             container.appendChild(btn);
         });
     }
 
-    // Boton Exportar PNG
-    document.getElementById('btn-export').addEventListener('click', () => {
+    // ─── Exportar PNG ─────────────────────────────────────────
+    document.getElementById('btn-export')?.addEventListener('click', () => {
         const activeTab = document.querySelector('.tab-content.active');
         if (!activeTab) return;
-        const canvases = activeTab.querySelectorAll('canvas');
-        canvases.forEach((canvas, idx) => {
-            let link = document.createElement('a');
-            link.download = `grafico_paracel_${idx + 1}.png`;
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const yearFilter = activeFilters['año'] && activeFilters['año'].size > 0
+            ? Array.from(activeFilters['año']).join('-')
+            : 'todos';
+        activeTab.querySelectorAll('canvas').forEach((canvas, idx) => {
+            const link = document.createElement('a');
+            link.download = `Percepcion_Paracel_${yearFilter}_${dateStr}_fig${idx + 1}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
     });
 
-    // Boton Theme Toggle
-    const themeBtn = document.getElementById('btn-theme');
-    document.documentElement.setAttribute('data-theme', 'dark'); // Fondo oscuro por default
-    themeBtn.innerText = '☀️ Light';
+    
+    // Botón Informe Word (DOCX) para el filtro actual
+    document.getElementById('btn-word')?.addEventListener('click', async () => {
+        try {
+            const activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return;
 
-    themeBtn.addEventListener('click', () => {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (isDark) {
-            document.documentElement.removeAttribute('data-theme');
-            themeBtn.innerText = '🌙 Dark';
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            themeBtn.innerText = '☀️ Light';
+            // Dataset filtrado actual
+            const dataFiltered = applyFilters(encuestasData);
+
+            if (!dataFiltered || dataFiltered.length === 0) {
+                alert('No hay datos para el filtro actual, ajuste los filtros e intente nuevamente.');
+                return;
+            }
+
+            // --- Utilidades ---
+            const norm = (x) => (x ?? '').toString().trim();
+            const pct = (x, n) => n ? (100 * x / n) : 0;
+
+            // --- Resumen de filtros ---
+            const filtros = [];
+            Object.keys(activeFilters).forEach(k => {
+                if (activeFilters[k] && activeFilters[k].size > 0) {
+                    filtros.push(`${k}: ${Array.from(activeFilters[k]).join(', ')}`);
+                }
+            });
+
+            // --- KPIs principales ---
+            const n = dataFiltered.length;
+            const counts = { Positiva: 0, Negativa: 0, Neutra: 0 };
+            dataFiltered.forEach(d => {
+                const p = norm(d['percepción_clasificada'] || d['percepcion_final'] || d['percepcion_final']).toLowerCase();
+                if (p.includes('posit')) counts.Positiva++;
+                else if (p.includes('negat')) counts.Negativa++;
+                else counts.Neutra++;
+            });
+
+            const balance = pct(counts.Positiva, n) - pct(counts.Negativa, n);
+
+            // --- Evolución por año ---
+            const byYear = {};
+            dataFiltered.forEach(d => {
+                const y = norm(d['año'] || d['ano'] || d['year']);
+                if (!y) return;
+                if (!byYear[y]) byYear[y] = { n: 0, Positiva: 0, Negativa: 0, Neutra: 0 };
+                byYear[y].n++;
+                const p = norm(d['percepción_clasificada'] || d['percepcion_final'] || d['percepcion_final']).toLowerCase();
+                if (p.includes('posit')) byYear[y].Positiva++;
+                else if (p.includes('negat')) byYear[y].Negativa++;
+                else byYear[y].Neutra++;
+            });
+            const years = Object.keys(byYear).sort();
+
+            // --- Top comunidades por balance (si corresponde) ---
+            const byCom = {};
+            dataFiltered.forEach(d => {
+                const c = norm(d['comunidad']);
+                if (!c) return;
+                if (!byCom[c]) byCom[c] = { n: 0, Positiva: 0, Negativa: 0, Neutra: 0 };
+                byCom[c].n++;
+                const p = norm(d['percepción_clasificada'] || d['percepcion_final'] || d['percepcion_final']).toLowerCase();
+                if (p.includes('posit')) byCom[c].Positiva++;
+                else if (p.includes('negat')) byCom[c].Negativa++;
+                else byCom[c].Neutra++;
+            });
+            const topCom = Object.entries(byCom)
+                .filter(([_, v]) => v.n >= 8) // mínimo operativo para evitar volatilidad extrema
+                .map(([k, v]) => {
+                    const pos = pct(v.Positiva, v.n);
+                    const neg = pct(v.Negativa, v.n);
+                    return [k, v.n, pos, neg, (pos - neg)];
+                })
+                .sort((a, b) => b[4] - a[4])
+                .slice(0, 10);
+
+            // --- Capturar figuras del tab activo (canvases) ---
+            const canvases = Array.from(activeTab.querySelectorAll('canvas'));
+            const images = canvases
+                .map(c => {
+                    try { return c.toDataURL('image/png'); } catch (_) { return null; }
+                })
+                .filter(Boolean);
+
+            // --- Construcción DOCX ---
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, ImageRun } = window.docx;
+
+            const para = (text, opts = {}) => new Paragraph({
+                children: [new TextRun({ text, ...opts })]
+            });
+
+            const h = (text, level = HeadingLevel.HEADING_1) => new Paragraph({
+                text,
+                heading: level
+            });
+
+            const cell = (text) => new TableCell({
+                children: [para(text)],
+                width: { size: 25, type: WidthType.PERCENTAGE }
+            });
+
+            const tableFromRows = (rows) => new Table({
+                rows: rows.map(r => new TableRow({ children: r.map(x => cell(String(x))) })),
+                width: { size: 100, type: WidthType.PERCENTAGE }
+            });
+
+            const docChildren = [];
+            docChildren.push(h('PARACEL · Informe de Percepción (Filtro actual)', HeadingLevel.HEADING_1));
+            docChildren.push(new Paragraph({ text: `Fecha de generación: ${new Date().toLocaleString()}` }));
+
+            if (filtros.length > 0) {
+                docChildren.push(h('Filtros aplicados', HeadingLevel.HEADING_2));
+                filtros.forEach(f => docChildren.push(new Paragraph({ text: `• ${f}` })));
+            }
+
+            docChildren.push(h('Resumen ejecutivo', HeadingLevel.HEADING_2));
+            docChildren.push(new Paragraph({
+                children: [
+                    new TextRun({ text: `Tamaño muestral efectivo (n): ${n}. ` }),
+                    new TextRun({ text: `Positiva: ${pct(counts.Positiva, n).toFixed(1)}%. ` }),
+                    new TextRun({ text: `Negativa: ${pct(counts.Negativa, n).toFixed(1)}%. ` }),
+                    new TextRun({ text: `Neutra: ${pct(counts.Neutra, n).toFixed(1)}%. ` }),
+                    new TextRun({ text: `Balance neto: ${balance.toFixed(1)} pp.` })
+                ]
+            }));
+
+            docChildren.push(h('Distribución global', HeadingLevel.HEADING_2));
+            docChildren.push(tableFromRows([
+                ['Categoría', 'n', '%'],
+                ['Positiva', counts.Positiva, pct(counts.Positiva, n).toFixed(1)],
+                ['Negativa', counts.Negativa, pct(counts.Negativa, n).toFixed(1)],
+                ['Neutra', counts.Neutra, pct(counts.Neutra, n).toFixed(1)],
+            ]));
+
+            if (years.length > 0) {
+                docChildren.push(h('Evolución por año (dentro del filtro)', HeadingLevel.HEADING_2));
+                const rows = [['Año', 'n', '% Pos', '% Neg', '% Neu', 'Balance (pp)']];
+                years.forEach(y => {
+                    const v = byYear[y];
+                    const pos = pct(v.Positiva, v.n);
+                    const neg = pct(v.Negativa, v.n);
+                    const neu = pct(v.Neutra, v.n);
+                    rows.push([y, v.n, pos.toFixed(1), neg.toFixed(1), neu.toFixed(1), (pos - neg).toFixed(1)]);
+                });
+                docChildren.push(tableFromRows(rows));
+            }
+
+            if (topCom.length > 0) {
+                docChildren.push(h('Top 10 comunidades por balance neto (n≥8)', HeadingLevel.HEADING_2));
+                const rows = [['Comunidad', 'n', '% Pos', '% Neg', 'Balance (pp)']];
+                topCom.forEach(r => rows.push([r[0], r[1], r[2].toFixed(1), r[3].toFixed(1), r[4].toFixed(1)]));
+                docChildren.push(tableFromRows(rows));
+            }
+
+            if (images.length > 0) {
+                docChildren.push(h('Figuras', HeadingLevel.HEADING_2));
+                for (const img of images.slice(0, 6)) { // límite prudente
+                    const base64 = img.split(',')[1];
+                    const buf = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+                    docChildren.push(new Paragraph({
+                        children: [new ImageRun({ data: buf, transformation: { width: 620, height: 340 } })],
+                        alignment: AlignmentType.CENTER
+                    }));
+                }
+            }
+
+            docChildren.push(h('Notas metodológicas', HeadingLevel.HEADING_2));
+            docChildren.push(new Paragraph({
+                text: 'Este informe describe resultados para el subconjunto de datos que cumple el filtro seleccionado. Si el levantamiento no es probabilístico, la interpretación debe ser descriptiva. Para comparaciones interanuales robustas, se recomienda consistencia de cobertura y ponderación.'
+            }));
+
+            const doc = new Document({ sections: [{ children: docChildren }] });
+            const blob = await Packer.toBlob(doc);
+
+            const y = (activeFilters['año'] && activeFilters['año'].size === 1) ? Array.from(activeFilters['año'])[0] : 'multi';
+            const fileName = `Informe_Percepcion_Paracel_${y}_${new Date().toISOString().slice(0,10)}.docx`;
+            saveAs(blob, fileName);
+        } catch (err) {
+            console.error(err);
+            alert('Ocurrió un error al generar el informe Word. Revise la consola del navegador (F12) para más detalle.');
         }
-        updateDashboard(); // Redibujar todos los graficos con colores correctos
     });
 
-    // APLICAR FILTROS Y RECOMPUTAR GRAFICOS
-    function updateDashboard() {
-        let filtered = encuestasData;
-
-        // Comprobar cada dimensión si tiene algún filtro activo (OR dentro de la dimensión, AND entre dimensiones)
-        for (const [colName, selectedSet] of Object.entries(activeFilters)) {
-            if (selectedSet.size > 0) {
-                // Validación Case Insensitive permitiendo match exacto con el Dataset o con el valor capitalizado del Boton
-                filtered = filtered.filter(d =>
-                    selectedSet.has(String(d[colName]).toLowerCase()) ||
-                    selectedSet.has(String(d[colName]))
-                );
-            }
-        }
-
-        currentData = filtered;
-        document.getElementById('total-encuestas').innerText = `Total Encuestas: ${currentData.length}`;
-
-        // RENDER MODULE 1
-        renderKPIs(currentData);
-        renderSingleColumnChart('chartComunidades', 'bar', 'comunidad');
-        renderMultiColumnChart('chartPositivos', 'bar', 'Aspectos Positivos (%)', configAspectosPositivos);
-        renderMultiColumnChart('chartNegativos', 'bar', 'Problemas / Negativos (%)', configAspectosNegativos);
-
-        // RENDER MODULE 2
-        renderMultiColumnChart('chartExpectativas', 'bar', 'Expectativas (%)', configExpectativas);
-        renderMultiColumnChart('chartMedios', 'bar', 'Medios de Info. (%)', configMedios); // Cambiado a barras
-        renderSingleColumnChart('chartTemores', 'bar', colTemores); // Convertido a barras permanentemente
-
-        // RENDER MODULE 3
-        renderSingleColumnChart('chartEstudios', 'bar', colEstudios);
-        renderSingleColumnChart('chartIngresos', 'bar', colIngresos);
-        renderMultiColumnChart('chartTrabajo', 'bar', 'Situación Laboral (%)', configOcupacion);
-
-        // RENDER MODULE 4 (EVOLUCION CLAVE 2022-2025)
-        renderEvolPositiva();
-        renderMultiColumnChart('chartEvolFaltaLaboral', 'bar', 'Falta Oferta Laboral (%)', ['poca oferta laboral']);
-        renderMultiColumnChart('chartEvolAtributos', 'bar', 'Atributos (%)', ['tranquilidad', 'la gente']);
-        renderEvolProduccion();
-        renderMultiColumnChart('chartEvolBeneficios', 'line', 'Beneficios (%)', ['puestos de trabajo para', 'caminos o rutas en zonas']);
-        renderMultiColumnChart('chartEvolCanales', 'bar', 'Canales (%)', configMedios);
-
-        // RENDER MODULE 5 (TABLA DE DATOS)
-        renderDataTable(currentData);
-
-        // RENDER MODULE 6 (MAPA GIS)
-        if (leafletMap) {
-            updateMapColors();
-        }
+    // ─── Theme Toggle (con persistencia) ─────────────────────
+    const themeBtn = document.getElementById('btn-theme');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('paracel_theme', newTheme);
+            themeBtn.innerText = newTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+            debouncedUpdate();
+        });
     }
 
-    // DINAMICA DE KPIS HEADER
+    // ─── APLICAR FILTROS Y RECOMPUTAR GRÁFICOS ───────────────
+    function updateDashboard() {
+        showLoader();
+        // Defer rendering to next frame so loader paints first
+        requestAnimationFrame(() => {
+            try {
+                let filtered = encuestasData;
+
+                for (const [colName, selectedSet] of Object.entries(activeFilters)) {
+                    if (selectedSet.size > 0) {
+                        filtered = filtered.filter(d =>
+                            selectedSet.has(String(d[colName]).toLowerCase()) ||
+                            selectedSet.has(String(d[colName]))
+                        );
+                    }
+                }
+
+                currentData = filtered;
+                document.getElementById('total-encuestas').innerText = `📊 ${currentData.length} encuestas`;
+
+                // RENDER MODULE 1
+                renderKPIs(currentData);
+                renderSingleColumnChart('chartComunidades', 'bar', 'comunidad');
+                renderMultiColumnChart('chartPositivos', 'bar', 'Aspectos Positivos (%)', configAspectosPositivos);
+                renderMultiColumnChart('chartNegativos', 'bar', 'Problemas / Negativos (%)', configAspectosNegativos);
+
+                // RENDER MODULE 2
+                renderMultiColumnChart('chartExpectativas', 'bar', 'Expectativas (%)', configExpectativas);
+                renderMultiColumnChart('chartMedios', 'bar', 'Medios de Info. (%)', configMedios);
+                renderSingleColumnChart('chartTemores', 'bar', colTemores);
+
+                // RENDER MODULE 3
+                renderSingleColumnChart('chartEstudios', 'bar', colEstudios);
+                renderSingleColumnChart('chartIngresos', 'bar', colIngresos);
+                renderMultiColumnChart('chartTrabajo', 'bar', 'Situación Laboral (%)', configOcupacion);
+
+                // RENDER MODULE 4 (EVOLUCIÓN 2022-2025)
+                renderEvolPositiva();
+                renderMultiColumnChart('chartEvolFaltaLaboral', 'bar', 'Falta Oferta Laboral (%)', ['poca oferta laboral']);
+                renderMultiColumnChart('chartEvolAtributos', 'bar', 'Atributos (%)', ['tranquilidad', 'la gente']);
+                renderEvolProduccion();
+                renderMultiColumnChart('chartEvolBeneficios', 'line', 'Beneficios (%)', ['puestos de trabajo para', 'caminos o rutas en zonas']);
+                renderMultiColumnChart('chartEvolCanales', 'bar', 'Canales (%)', configMedios);
+
+                // RENDER MODULE 5 (TABLA)
+                renderDataTable(currentData);
+
+                // RENDER MODULE 6 (MAPA GIS)
+                if (leafletMap) updateMapColors();
+
+            } finally {
+                hideLoader();
+            }
+        });
+    }
+
+    // Versión con debounce (150 ms) para filtros rápidos
+    const debouncedUpdate = debounce(updateDashboard, 150);
+
+    // ─── KPIs CON ANIMACIÓN countUp ───────────────────────────
     function renderKPIs(data) {
+        const elTotal   = document.getElementById('kpi-total');
+        const elPos     = document.getElementById('kpi-positiva');
+        const elProb    = document.getElementById('kpi-problema');
+        const elAttr    = document.getElementById('kpi-atributo');
+
         if (!data || data.length === 0) {
-            document.getElementById('kpi-total').innerText = '0';
-            document.getElementById('kpi-positiva').innerText = '0%';
-            document.getElementById('kpi-problema').innerText = '-';
-            document.getElementById('kpi-atributo').innerText = '-';
+            if (elTotal) elTotal.textContent = '0';
+            if (elPos)   elPos.textContent   = '0%';
+            if (elProb)  elProb.textContent   = '—';
+            if (elAttr)  elAttr.textContent   = '—';
             return;
         }
 
-        // 1. Total Encuestas
-        document.getElementById('kpi-total').innerText = data.length;
+        // 1. Total encuestas — animado
+        countUp(elTotal, data.length);
 
-        // 2. Percepcion Positiva
-        let countPos = data.filter(d => d['percepción_clasificada'] === 'Positiva').length;
-        document.getElementById('kpi-positiva').innerText = ((countPos / data.length) * 100).toFixed(1) + '%';
+        // 2. Percepción positiva — animado con 1 decimal
+        const countPos = data.filter(d => d['percepción_clasificada'] === 'Positiva').length;
+        const pctPos = (countPos / data.length) * 100;
+        countUp(elPos, pctPos, '%', 1);
 
-        // Helper buscar llaves flex (mayus/minus)
+        // Helper fuzzy key
         function getFuzzyKey(obj, substring) {
             return Object.keys(obj).find(k => k.toLowerCase().includes(substring.toLowerCase())) || substring;
         }
+        const bad = new Set(['undefined', 'null', '', 'ninguno', 'nan', 'false', '-']);
 
         // 3. Top Problema
-        let problemas = {};
+        const problemas = {};
         data.forEach(d => {
             configAspectosNegativos.forEach(p => {
-                let actual = getFuzzyKey(d, p);
-                let v = d[actual];
-                let strV = String(v).trim().toLowerCase();
-                if (strV !== "undefined" && strV !== "null" && strV !== "" && strV !== "ninguno" && strV !== "nan" && strV !== "false" && strV !== "-") {
-                    problemas[p] = (problemas[p] || 0) + 1;
-                }
+                const strV = String(d[getFuzzyKey(d, p)] ?? '').trim().toLowerCase();
+                if (!bad.has(strV)) problemas[p] = (problemas[p] || 0) + 1;
             });
         });
-        let topProblema = Object.keys(problemas).sort((a, b) => problemas[b] - problemas[a])[0];
-        document.getElementById('kpi-problema').innerText = topProblema ? truncate(topProblema, 25) : 'N/A';
+        const topProblema = Object.keys(problemas).sort((a, b) => problemas[b] - problemas[a])[0];
+        if (elProb) elProb.textContent = topProblema ? truncate(topProblema, 28) : 'N/A';
 
         // 4. Top Atributo
-        let atributos = {};
+        const atributos = {};
         data.forEach(d => {
             configAspectosPositivos.forEach(a => {
-                let actual = getFuzzyKey(d, a);
-                let v = d[actual];
-                let strV = String(v).trim().toLowerCase();
-                if (strV !== "undefined" && strV !== "null" && strV !== "" && strV !== "ninguno" && strV !== "nan" && strV !== "false" && strV !== "-") {
-                    atributos[a] = (atributos[a] || 0) + 1;
-                }
+                const strV = String(d[getFuzzyKey(d, a)] ?? '').trim().toLowerCase();
+                if (!bad.has(strV)) atributos[a] = (atributos[a] || 0) + 1;
             });
         });
-        let topAtributo = Object.keys(atributos).sort((a, b) => atributos[b] - atributos[a])[0];
-        document.getElementById('kpi-atributo').innerText = topAtributo ? truncate(topAtributo, 25) : 'N/A';
+        const topAtributo = Object.keys(atributos).sort((a, b) => atributos[b] - atributos[a])[0];
+        if (elAttr) elAttr.textContent = topAtributo ? truncate(topAtributo, 28) : 'N/A';
     }
 
     // Para contar presencias ("Sí") cruzando múltiples columnas
@@ -697,14 +951,16 @@ document.addEventListener("DOMContentLoaded", () => {
             csvContent += rowArray.join(";") + "\r\n";
         });
 
-        const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob(['\ufeff', csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Data_Percepcion_Paracel_${new Date().getTime()}.csv`);
+        const link = document.createElement('a');
+        const dateStr = new Date().toISOString().slice(0, 10);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Data_Percepcion_Paracel_${dateStr}_n${currentData.length}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     });
 
     // --- MÓDULO GIS LEAFLET ---
