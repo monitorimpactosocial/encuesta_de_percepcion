@@ -707,34 +707,28 @@ document.addEventListener("DOMContentLoaded", () => {
             years = [...new Set(currentData.map(d => String(d['año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
         }
 
-        let datasets = [];
-        let dataPoints = [];
+        // Usar percepción_clasificada (ya pre-procesada en showDashboard), no heurística de columna
+        const catColors = {
+            Positiva: { bg: 'rgba(34,197,94,0.15)',  border: '#22c55e' },
+            Negativa: { bg: 'rgba(239,68,68,0.15)',  border: '#ef4444' },
+            Neutra:   { bg: 'rgba(148,163,184,0.15)', border: '#94a3b8' }
+        };
 
-        years.forEach(year => {
-            let yearData = currentData.filter(d => String(d['año']) === year);
-            const total = yearData.length;
-
-            // Calculamos gente que reporto algun aspecto positivo (no marco "No vio algun aspecto positivo aun")
-            let posKey = Object.keys(yearData[0] || {}).find(k => k.toLowerCase().includes('positivo'));
-
-            let countPositive = yearData.filter(d => {
-                let negResp = String(posKey ? d[posKey] : '').trim().toLowerCase();
-                return !(negResp.includes('no vi') || negResp.includes('ns') || negResp.includes('nr') || negResp === 'true');
-            }).length;
-
-            let pct = total > 0 ? ((countPositive / total) * 100).toFixed(1) : 0;
-            dataPoints.push(pct);
-        });
-
-        datasets.push({
-            label: 'Percepción Positiva (%)',
-            data: dataPoints,
-            backgroundColor: 'rgba(2, 132, 199, 0.1)',
-            borderColor: '#0284c7', // Paracel blue
+        const datasets = ['Positiva', 'Neutra', 'Negativa'].map(cat => ({
+            label: `${cat} (%)`,
+            data: years.map(year => {
+                const yd = currentData.filter(d => String(d['año']) === year);
+                const total = yd.length;
+                if (!total) return 0;
+                const count = yd.filter(d => d['percepción_clasificada'] === cat).length;
+                return Number(((count / total) * 100).toFixed(1));
+            }),
+            backgroundColor: catColors[cat].bg,
+            borderColor: catColors[cat].border,
             borderWidth: 2,
-            fill: true,
+            fill: cat === 'Positiva',
             tension: 0.3
-        });
+        }));
 
         drawChart(ctx, 'chartEvolPositiva', 'line', years, datasets);
     }
