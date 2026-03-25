@@ -486,6 +486,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderEvolProduccion();
                 renderMultiColumnChart('chartEvolBeneficios', 'line', 'Beneficios (%)', ['puestos de trabajo para', 'caminos o rutas en zonas']);
                 renderMultiColumnChart('chartEvolCanales', 'bar', 'Canales (%)', configMedios);
+                renderEvolDistribucion();
+                renderEvolRankingComunidad();
 
                 // RENDER MODULE 5 (TABLA)
                 renderDataTable(currentData);
@@ -732,6 +734,194 @@ document.addEventListener("DOMContentLoaded", () => {
 
         drawChart(ctx, 'chartEvolPositiva', 'line', years, datasets);
     }
+
+    // GRÁFICO 7 — Distribución anual Positiva / Neutra / Negativa (barras apiladas 100%)
+    function renderEvolDistribucion() {
+        const ctx = document.getElementById('chartEvolDistribucion')?.getContext('2d');
+        if (!ctx) return;
+        if (charts['chartEvolDistribucion']) charts['chartEvolDistribucion'].destroy();
+
+        let years = Array.from(activeFilters['año']);
+        if (years.length === 0) {
+            years = [...new Set(currentData.map(d => String(d['año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
+        }
+
+        const cats = [
+            { key: 'Positiva', color: 'rgba(34,197,94,0.85)',  border: '#22c55e' },
+            { key: 'Neutra',   color: 'rgba(148,163,184,0.75)', border: '#94a3b8' },
+            { key: 'Negativa', color: 'rgba(239,68,68,0.85)',   border: '#ef4444' }
+        ];
+
+        const datasets = cats.map(cat => ({
+            label: `${cat.key} (%)`,
+            data: years.map(year => {
+                const yd = currentData.filter(d => String(d['año']) === year);
+                if (!yd.length) return 0;
+                return Number(((yd.filter(d => d['percepción_clasificada'] === cat.key).length / yd.length) * 100).toFixed(1));
+            }),
+            backgroundColor: cat.color,
+            borderColor: cat.border,
+            borderWidth: 1,
+            borderRadius: 3,
+            stack: 'stack'
+        }));
+
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        const labelColor = isDark ? '#e2e8f0' : '#1e293b';
+        const gridColor  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+        if (charts['chartEvolDistribucion']) charts['chartEvolDistribucion'].destroy();
+        charts['chartEvolDistribucion'] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: years, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 500 },
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: labelColor, padding: 16, font: { size: 12 } } },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 11 },
+                        formatter: v => v >= 7 ? `${v}%` : '',
+                        anchor: 'center', align: 'center'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%`
+                        }
+                    },
+                    // Línea de referencia NAUTA 70%
+                    annotation: undefined
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false }, ticks: { color: labelColor } },
+                    y: {
+                        stacked: true,
+                        max: 100,
+                        beginAtZero: true,
+                        grid: { color: gridColor },
+                        ticks: { color: labelColor, callback: v => `${v}%` }
+                    }
+                },
+                layout: { padding: { top: 10, bottom: 20 } }
+            }
+        });
+    }
+
+    // GRÁFICO 8 — Ranking de Percepción Positiva por Comunidad (último año, horizontal)
+    function renderEvolRankingComunidad() {
+        const ctx = document.getElementById('chartEvolRankingComunidad')?.getContext('2d');
+        if (!ctx) return;
+        if (charts['chartEvolRankingComunidad']) charts['chartEvolRankingComunidad'].destroy();
+
+        // Determinar el último año disponible en currentData
+        const allYears = [...new Set(currentData.map(d => String(d['año'])))].filter(y => y !== 'undefined' && y !== 'null' && y !== 'NaN').sort();
+        const lastYear = allYears[allYears.length - 1];
+        if (!lastYear) return;
+
+        const yearData = currentData.filter(d => String(d['año']) === lastYear);
+
+        // Agrupar por comunidad
+        const statsMap = {};
+        yearData.forEach(d => {
+            const com = String(d['comunidad'] || '').trim();
+            if (!com || com.toLowerCase() === 'nan' || com === '-') return;
+            if (!statsMap[com]) statsMap[com] = { total: 0, pos: 0, neg: 0, neu: 0 };
+            statsMap[com].total++;
+            const p = d['percepción_clasificada'];
+            if (p === 'Positiva') statsMap[com].pos++;
+            else if (p === 'Negativa') statsMap[com].neg++;
+            else statsMap[com].neu++;
+        });
+
+        // Filtrar mínimo n≥5, calcular % y ordenar desc por positiva
+        const entries = Object.entries(statsMap)
+            .filter(([, s]) => s.total >= 5)
+            .map(([com, s]) => ({
+                com,
+                pctPos: Number(((s.pos / s.total) * 100).toFixed(1)),
+                pctNeg: Number(((s.neg / s.total) * 100).toFixed(1)),
+                n: s.total
+            }))
+            .sort((a, b) => b.pctPos - a.pctPos);
+
+        if (!entries.length) return;
+
+        const labels = entries.map(e => `${e.com} (n=${e.n})`);
+
+        // Color semáforo NAUTA por comunidad
+        const bgPos = entries.map(e =>
+            e.pctPos >= 70 ? 'rgba(34,197,94,0.85)' :
+            e.pctPos >= 50 ? 'rgba(245,158,11,0.85)' :
+                             'rgba(239,68,68,0.85)'
+        );
+        const bgNeg = entries.map(() => 'rgba(239,68,68,0.45)');
+
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        const labelColor = isDark ? '#e2e8f0' : '#1e293b';
+        const gridColor  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+        charts['chartEvolRankingComunidad'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Percepción Positiva (%)',
+                        data: entries.map(e => e.pctPos),
+                        backgroundColor: bgPos,
+                        borderColor: bgPos.map(c => c.replace('0.85', '1')),
+                        borderWidth: 1,
+                        borderRadius: 3
+                    },
+                    {
+                        label: 'Percepción Negativa (%)',
+                        data: entries.map(e => -e.pctNeg), // negativo para divergente
+                        backgroundColor: bgNeg,
+                        borderColor: 'rgba(239,68,68,0.7)',
+                        borderWidth: 1,
+                        borderRadius: 3
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 500 },
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: labelColor, font: { size: 12 } } },
+                    datalabels: {
+                        color: '#fff',
+                        font: { size: 10, weight: 'bold' },
+                        formatter: (v, ctx) => {
+                            const abs = Math.abs(v);
+                            return abs >= 6 ? `${abs}%` : '';
+                        },
+                        anchor: 'center', align: 'center'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: ${Math.abs(ctx.parsed.x)}%`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: { color: labelColor, callback: v => `${Math.abs(v)}%` }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: labelColor, font: { size: 11 } }
+                    }
+                },
+                layout: { padding: { top: 5, right: 20 } }
+            }
+        });
+    }
+
 
     function renderEvolProduccion() {
         const ctx = document.getElementById('chartEvolProduccion').getContext('2d');
